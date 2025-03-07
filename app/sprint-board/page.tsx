@@ -184,12 +184,11 @@ export default function SprintBoardPage() {
     setIsPreviewOpen(true)
   }
 
-  const handleEditTicket = (ticket: (typeof tickets)[0]) => {
-    // In a real app, this would open the edit form with the ticket data
-    toast({
-      title: "Edit ticket",
-      description: `Editing ticket ${ticket.id}`,
-    })
+  const handleSaveTicket = (updatedTicket: (typeof tickets)[0]) => {
+    // Update the ticket in the tickets array
+    const updatedTickets = tickets.map((ticket) => (ticket.id === updatedTicket.id ? updatedTicket : ticket))
+
+    setTickets(updatedTickets)
   }
 
   const ticketsByStatus = {
@@ -286,7 +285,7 @@ export default function SprintBoardPage() {
         ticket={selectedTicket}
         open={isPreviewOpen}
         onOpenChange={setIsPreviewOpen}
-        onEdit={handleEditTicket}
+        onSave={handleSaveTicket}
       />
     </div>
   )
