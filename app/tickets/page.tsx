@@ -4,14 +4,13 @@ import type React from "react"
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -20,7 +19,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
-import { AlertCircle, Clock, Plus, Search, User } from "lucide-react"
+import { AlertCircle, ChevronDown, ChevronUp, Clock, Plus, Search } from "lucide-react"
 import { TicketPreviewDialog } from "@/components/ticket-preview-dialog"
 
 // Mock ticket data
@@ -115,10 +114,11 @@ const mockTickets = [
   },
 ]
 
+// Update the priorityColors object to use solid background colors for the priority bars
 const priorityColors = {
-  High: "text-red-500 bg-red-100 dark:bg-red-900/20",
-  Medium: "text-yellow-500 bg-yellow-100 dark:bg-yellow-900/20",
-  Low: "text-green-500 bg-green-100 dark:bg-green-900/20",
+  High: "bg-red-500",
+  Medium: "bg-yellow-500",
+  Low: "bg-green-500",
 }
 
 export default function TicketsPage() {
@@ -137,6 +137,11 @@ export default function TicketsPage() {
   const [newTag, setNewTag] = useState("")
   const [selectedTicket, setSelectedTicket] = useState<(typeof tickets)[0] | null>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
+    "Current Sprint": true,
+    "Next Sprint": true,
+    Backlog: true,
+  })
 
   const filteredTickets = tickets.filter(
     (ticket) =>
@@ -233,6 +238,13 @@ export default function TicketsPage() {
     })
   }
 
+  const toggleCategory = (category: string) => {
+    setExpandedCategories((prev) => ({
+      ...prev,
+      [category]: !prev[category],
+    }))
+  }
+
   const ticketsByStatus = {
     "Current Sprint": filteredTickets.filter((ticket) => ticket.status === "Current Sprint"),
     "Next Sprint": filteredTickets.filter((ticket) => ticket.status === "Next Sprint"),
@@ -249,7 +261,7 @@ export default function TicketsPage() {
               <Plus className="mr-2 h-4 w-4" /> New Ticket
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[600px] max-h-[85vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>Create New Ticket</DialogTitle>
               <DialogDescription>Fill in the details to create a new ticket.</DialogDescription>
@@ -271,6 +283,7 @@ export default function TicketsPage() {
                   value={newTicket.description}
                   onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
                   placeholder="Enter ticket description (supports markdown)"
+                  className="min-h-[120px] resize-none"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -346,14 +359,14 @@ export default function TicketsPage() {
                 </div>
               </div>
             </div>
-            <DialogFooter>
+            <div className="flex justify-between mt-4">
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancel
               </Button>
               <Button type="button" onClick={handleCreateTicket}>
                 Create Ticket
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
@@ -369,69 +382,74 @@ export default function TicketsPage() {
         />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="flex flex-col gap-6">
         {Object.entries(ticketsByStatus).map(([status, statusTickets]) => (
-          <Card
-            key={status}
-            className="flex flex-col"
-            onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, status)}
-          >
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">{status}</CardTitle>
-              <CardDescription>
-                {statusTickets.length} ticket{statusTickets.length !== 1 ? "s" : ""}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 overflow-auto">
-              <div className="space-y-4">
-                {statusTickets.map((ticket) => (
-                  <div
-                    key={ticket.id}
-                    className="flex flex-col gap-2 rounded-lg border p-3 shadow-sm cursor-pointer hover:border-primary transition-colors"
-                    onClick={() => handleTicketClick(ticket)}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, ticket.id)}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="font-medium">{ticket.title}</div>
-                      <Badge variant="outline">{ticket.id}</Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{ticket.description}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {ticket.tags.map((tag) => (
-                        <Badge key={tag} variant="secondary" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        <User className="h-3 w-3" />
-                        <span>{ticket.assignee}</span>
-                      </div>
-                      <Badge
-                        variant="outline"
-                        className={priorityColors[ticket.priority as keyof typeof priorityColors]}
-                      >
-                        {ticket.priority}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      <span>Created on {ticket.createdAt}</span>
-                    </div>
-                  </div>
-                ))}
-                {statusTickets.length === 0 && (
-                  <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
-                    <AlertCircle className="h-8 w-8 text-muted-foreground" />
-                    <h3 className="mt-2 text-sm font-medium">No tickets</h3>
-                    <p className="mt-1 text-xs text-muted-foreground">No tickets found in this category.</p>
-                  </div>
-                )}
+          <Card key={status} className="flex flex-col">
+            <CardHeader
+              className="pb-2 cursor-pointer flex flex-row items-center justify-between"
+              onClick={() => toggleCategory(status)}
+            >
+              <div className="flex items-center">
+                <CardTitle className="text-lg">{status}</CardTitle>
+                <Badge variant="outline" className="ml-2">
+                  {statusTickets.length} ticket{statusTickets.length !== 1 ? "s" : ""}
+                </Badge>
               </div>
-            </CardContent>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                {expandedCategories[status] ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+            </CardHeader>
+            {expandedCategories[status] && (
+              <CardContent
+                className="flex-1 overflow-auto"
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, status)}
+              >
+                <div className="space-y-4">
+                  {statusTickets.map((ticket) => (
+                    <div
+                      key={ticket.id}
+                      className="flex items-center rounded-md border p-2 shadow-sm cursor-pointer hover:border-primary transition-colors"
+                      onClick={() => handleTicketClick(ticket)}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, ticket.id)}
+                    >
+                      {/* Priority indicator bar */}
+                      <div
+                        className={`w-1 h-full self-stretch rounded-sm mr-2 ${priorityColors[ticket.priority as keyof typeof priorityColors]}`}
+                        aria-label={`Priority: ${ticket.priority}`}
+                      />
+
+                      {/* Ticket title */}
+                      <div className="flex-1 min-w-0 font-medium text-sm truncate">{ticket.title}</div>
+
+                      {/* Ticket number */}
+                      <div className="text-xs text-muted-foreground mx-2 whitespace-nowrap">{ticket.id}</div>
+
+                      {/* Creation date */}
+                      <div className="text-xs text-muted-foreground mr-2 hidden sm:block whitespace-nowrap">
+                        <Clock className="h-3 w-3 inline mr-1" />
+                        {ticket.createdAt}
+                      </div>
+
+                      {/* User avatar */}
+                      <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
+                        {ticket.assignee
+                          .split(" ")
+                          .map((name) => name[0])
+                          .join("")}
+                      </div>
+                    </div>
+                  ))}
+                  {statusTickets.length === 0 && (
+                    <div className="flex items-center justify-center rounded-lg border border-dashed p-4 text-center">
+                      <AlertCircle className="h-4 w-4 text-muted-foreground mr-2" />
+                      <p className="text-sm text-muted-foreground">No tickets found</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            )}
           </Card>
         ))}
       </div>

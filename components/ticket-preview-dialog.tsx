@@ -3,19 +3,13 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
 import { Clock, MessageSquare, Pencil, User } from "lucide-react"
 import ReactMarkdown from "react-markdown"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
 
 interface TicketComment {
   id: string
@@ -45,7 +39,6 @@ interface TicketPreviewDialogProps {
 
 export function TicketPreviewDialog({ ticket, open, onOpenChange, onEdit }: TicketPreviewDialogProps) {
   const { toast } = useToast()
-  const [activeTab, setActiveTab] = useState("details")
   const [newComment, setNewComment] = useState("")
 
   if (!ticket) return null
@@ -65,7 +58,6 @@ export function TicketPreviewDialog({ ticket, open, onOpenChange, onEdit }: Tick
     })
 
     setNewComment("")
-    setActiveTab("comments")
   }
 
   const handleEdit = () => {
@@ -77,96 +69,98 @@ export function TicketPreviewDialog({ ticket, open, onOpenChange, onEdit }: Tick
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[85vh] flex flex-col">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl">{ticket.title}</DialogTitle>
             <Badge variant="outline">{ticket.id}</Badge>
           </div>
-          <DialogDescription>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {ticket.tags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="text-xs">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          </DialogDescription>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {ticket.tags.map((tag) => (
+              <Badge key={tag} variant="secondary" className="text-xs">
+                {tag}
+              </Badge>
+            ))}
+          </div>
         </DialogHeader>
 
-        <Tabs defaultValue="details" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="comments">Comments ({ticket.comments?.length || 0})</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="details" className="space-y-4">
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                <span>Assignee: {ticket.assignee}</span>
-              </div>
-              <Badge variant="outline" className={priorityColors[ticket.priority as keyof typeof priorityColors]}>
-                {ticket.priority}
-              </Badge>
-            </div>
-
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              <span>Created on {ticket.createdAt}</span>
-            </div>
-
-            <div className="rounded-md border p-4">
-              <h3 className="mb-2 text-sm font-medium">Description</h3>
-              <div className="prose prose-sm max-w-none dark:prose-invert">
-                <ReactMarkdown>{ticket.description}</ReactMarkdown>
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="comments" className="space-y-4">
+        <ScrollArea className="flex-1 pr-4">
+          <div className="space-y-4">
+            {/* Ticket Details Section */}
             <div className="space-y-4">
-              {ticket.comments && ticket.comments.length > 0 ? (
-                ticket.comments.map((comment) => (
-                  <div key={comment.id} className="rounded-md border p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="font-medium">{comment.author}</div>
-                      <div className="text-xs text-muted-foreground">{comment.createdAt}</div>
-                    </div>
-                    <p className="text-sm">{comment.content}</p>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <MessageSquare className="mx-auto h-8 w-8 mb-2" />
-                  <p>No comments yet</p>
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  <span>Assignee: {ticket.assignee}</span>
                 </div>
-              )}
+                <Badge variant="outline" className={priorityColors[ticket.priority as keyof typeof priorityColors]}>
+                  {ticket.priority}
+                </Badge>
+              </div>
+
+              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                <span>Created on {ticket.createdAt}</span>
+              </div>
+
+              <div className="rounded-md border p-4">
+                <h3 className="mb-2 text-sm font-medium">Description</h3>
+                <div className="prose prose-sm max-w-none dark:prose-invert break-words">
+                  <ReactMarkdown>{ticket.description}</ReactMarkdown>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Textarea
-                placeholder="Add a comment..."
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                className="min-h-[100px]"
-              />
-              <Button onClick={handleAddComment} className="w-full">
-                Add Comment
+            {/* Comments Section */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <MessageSquare className="h-4 w-4" />
+                <h3 className="text-sm font-medium">Comments</h3>
+              </div>
+              <Separator className="my-4" />
+
+              <div className="space-y-4">
+                {ticket.comments && ticket.comments.length > 0 ? (
+                  ticket.comments.map((comment) => (
+                    <div key={comment.id} className="rounded-md border p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="font-medium">{comment.author}</div>
+                        <div className="text-xs text-muted-foreground">{comment.createdAt}</div>
+                      </div>
+                      <p className="text-sm break-words">{comment.content}</p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <MessageSquare className="mx-auto h-8 w-8 mb-2" />
+                    <p>No comments yet</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </ScrollArea>
+
+        <div className="space-y-2 mt-4">
+          <Textarea
+            placeholder="Add a comment..."
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            className="min-h-[80px] resize-none"
+          />
+          <div className="flex justify-between">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
+            <div className="flex gap-2">
+              <Button onClick={handleAddComment}>Add Comment</Button>
+              <Button onClick={handleEdit} variant="secondary">
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit Ticket
               </Button>
             </div>
-          </TabsContent>
-        </Tabs>
-
-        <DialogFooter className="flex justify-between sm:justify-between">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
-          </Button>
-          <Button onClick={handleEdit}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Edit Ticket
-          </Button>
-        </DialogFooter>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   )

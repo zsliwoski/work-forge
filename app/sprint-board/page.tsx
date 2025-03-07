@@ -5,7 +5,6 @@ import type React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
   DialogContent,
@@ -16,8 +15,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { useToast } from "@/components/ui/use-toast"
-import { AlertCircle, CheckCircle, User } from "lucide-react"
+import { AlertCircle, CheckCircle } from "lucide-react"
 import { TicketPreviewDialog } from "@/components/ticket-preview-dialog"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 // Mock ticket data
 const mockTickets = [
@@ -28,6 +28,8 @@ const mockTickets = [
     status: "Todo",
     priority: "High",
     assignee: "John Doe",
+    assigneeAvatar: "/placeholder.svg?height=32&width=32",
+    assigneeInitials: "JD",
     tags: ["Backend", "Security"],
     createdAt: "2023-08-15",
     comments: [
@@ -46,6 +48,8 @@ const mockTickets = [
     status: "In Progress",
     priority: "Medium",
     assignee: "Jane Smith",
+    assigneeAvatar: "/placeholder.svg?height=32&width=32",
+    assigneeInitials: "JS",
     tags: ["Frontend", "UI/UX"],
     createdAt: "2023-08-16",
   },
@@ -56,6 +60,8 @@ const mockTickets = [
     status: "Blocked",
     priority: "High",
     assignee: "John Doe",
+    assigneeAvatar: "/placeholder.svg?height=32&width=32",
+    assigneeInitials: "JD",
     tags: ["Backend", "API"],
     createdAt: "2023-08-17",
   },
@@ -66,6 +72,8 @@ const mockTickets = [
     status: "Done",
     priority: "Medium",
     assignee: "Jane Smith",
+    assigneeAvatar: "/placeholder.svg?height=32&width=32",
+    assigneeInitials: "JS",
     tags: ["Frontend", "Feature"],
     createdAt: "2023-08-18",
   },
@@ -76,6 +84,8 @@ const mockTickets = [
     status: "Todo",
     priority: "Low",
     assignee: "John Doe",
+    assigneeAvatar: "/placeholder.svg?height=32&width=32",
+    assigneeInitials: "JD",
     tags: ["Frontend", "UX"],
     createdAt: "2023-08-19",
   },
@@ -86,6 +96,8 @@ const mockTickets = [
     status: "In Progress",
     priority: "Medium",
     assignee: "Jane Smith",
+    assigneeAvatar: "/placeholder.svg?height=32&width=32",
+    assigneeInitials: "JS",
     tags: ["DevOps", "Infrastructure"],
     createdAt: "2023-08-20",
   },
@@ -96,6 +108,8 @@ const mockTickets = [
     status: "Todo",
     priority: "High",
     assignee: "John Doe",
+    assigneeAvatar: "/placeholder.svg?height=32&width=32",
+    assigneeInitials: "JD",
     tags: ["Backend", "Security"],
     createdAt: "2023-08-21",
   },
@@ -106,15 +120,17 @@ const mockTickets = [
     status: "Done",
     priority: "Low",
     assignee: "Jane Smith",
+    assigneeAvatar: "/placeholder.svg?height=32&width=32",
+    assigneeInitials: "JS",
     tags: ["Frontend", "UI"],
     createdAt: "2023-08-22",
   },
 ]
 
 const priorityColors = {
-  High: "text-red-500 bg-red-100 dark:bg-red-900/20",
-  Medium: "text-yellow-500 bg-yellow-100 dark:bg-yellow-900/20",
-  Low: "text-green-500 bg-green-100 dark:bg-green-900/20",
+  High: "bg-red-500",
+  Medium: "bg-yellow-500",
+  Low: "bg-green-500",
 }
 
 export default function SprintBoardPage() {
@@ -225,39 +241,32 @@ export default function SprintBoardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-1 overflow-auto">
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {statusTickets.map((ticket) => (
                   <div
                     key={ticket.id}
-                    className="flex flex-col gap-2 rounded-lg border p-3 shadow-sm cursor-pointer hover:border-primary transition-colors"
+                    className="flex items-center rounded-md border bg-card p-3 shadow-sm cursor-pointer hover:border-primary transition-colors"
                     draggable
                     onDragStart={(e) => handleDragStart(e, ticket.id)}
                     onClick={() => handleTicketClick(ticket)}
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="font-medium">{ticket.title}</div>
-                      <Badge variant="outline">{ticket.id}</Badge>
+                    {/* Priority indicator */}
+                    <div
+                      className={`w-1.5 h-14 rounded-full mr-3 ${priorityColors[ticket.priority as keyof typeof priorityColors]}`}
+                      aria-label={`Priority: ${ticket.priority}`}
+                    />
+
+                    {/* Ticket content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">{ticket.title}</div>
+                      <div className="text-xs text-muted-foreground mt-1">{ticket.id}</div>
                     </div>
-                    <p className="text-sm text-muted-foreground line-clamp-2">{ticket.description}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {ticket.tags.map((tag) => (
-                        <Badge key={tag} variant="secondary" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        <User className="h-3 w-3" />
-                        <span>{ticket.assignee}</span>
-                      </div>
-                      <Badge
-                        variant="outline"
-                        className={priorityColors[ticket.priority as keyof typeof priorityColors]}
-                      >
-                        {ticket.priority}
-                      </Badge>
-                    </div>
+
+                    {/* Assignee avatar */}
+                    <Avatar className="h-8 w-8 ml-2">
+                      <AvatarImage src={ticket.assigneeAvatar} alt={ticket.assignee} />
+                      <AvatarFallback>{ticket.assigneeInitials}</AvatarFallback>
+                    </Avatar>
                   </div>
                 ))}
                 {statusTickets.length === 0 && (

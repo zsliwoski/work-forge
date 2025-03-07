@@ -64,11 +64,11 @@ export default function WikiPage() {
     const updatedPages = wikiPages.map((page) =>
       page.id === selectedPage.id
         ? {
-            ...page,
-            title: editTitle,
-            content: editContent,
-            updatedAt: new Date().toISOString().split("T")[0],
-          }
+          ...page,
+          title: editTitle,
+          content: editContent,
+          updatedAt: new Date().toISOString().split("T")[0],
+        }
         : page,
     )
     setWikiPages(updatedPages)
