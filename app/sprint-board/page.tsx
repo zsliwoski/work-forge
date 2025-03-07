@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -18,6 +18,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { AlertCircle, CheckCircle } from "lucide-react"
 import { TicketPreviewDialog } from "@/components/ticket-preview-dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { AssigneeFilter } from "@/components/assignee-filter"
 
 // Mock ticket data
 const mockTickets = [
@@ -125,6 +126,30 @@ const mockTickets = [
     tags: ["Frontend", "UI"],
     createdAt: "2023-08-22",
   },
+  {
+    id: "TICKET-009",
+    title: "Optimize database queries",
+    description: "Improve performance of database queries for ticket listing",
+    status: "Todo",
+    priority: "Medium",
+    assignee: "Alex Johnson",
+    assigneeAvatar: "/placeholder.svg?height=32&width=32",
+    assigneeInitials: "AJ",
+    tags: ["Backend", "Performance"],
+    createdAt: "2023-08-23",
+  },
+  {
+    id: "TICKET-010",
+    title: "Implement email notifications",
+    description: "Send email notifications for ticket updates and mentions",
+    status: "In Progress",
+    priority: "Medium",
+    assignee: "Alex Johnson",
+    assigneeAvatar: "/placeholder.svg?height=32&width=32",
+    assigneeInitials: "AJ",
+    tags: ["Backend", "Feature"],
+    createdAt: "2023-08-24",
+  },
 ]
 
 const priorityColors = {
@@ -139,6 +164,30 @@ export default function SprintBoardPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedTicket, setSelectedTicket] = useState<(typeof tickets)[0] | null>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const [selectedAssignee, setSelectedAssignee] = useState<string | null>(null)
+
+  // Extract unique assignees from tickets
+  const assignees = useMemo(() => {
+    const uniqueAssignees = new Map()
+
+    tickets.forEach((ticket) => {
+      if (!uniqueAssignees.has(ticket.assignee)) {
+        uniqueAssignees.set(ticket.assignee, {
+          name: ticket.assignee,
+          avatar: ticket.assigneeAvatar,
+          initials: ticket.assigneeInitials,
+        })
+      }
+    })
+
+    return Array.from(uniqueAssignees.values())
+  }, [tickets])
+
+  // Filter tickets based on selected assignee
+  const filteredTickets = useMemo(() => {
+    if (!selectedAssignee) return tickets
+    return tickets.filter((ticket) => ticket.assignee === selectedAssignee)
+  }, [tickets, selectedAssignee])
 
   const handleCompleteSprint = () => {
     // Move all "Done" tickets to a completed state or archive
@@ -191,11 +240,31 @@ export default function SprintBoardPage() {
     setTickets(updatedTickets)
   }
 
+  const handleSelectAssignee = (assignee: string | null) => {
+    setSelectedAssignee(assignee)
+
+    if (assignee) {
+      toast({
+        title: "Filter applied",
+        description: `Showing tickets assigned to ${assignee}`,
+      })
+    }
+  }
+
   const ticketsByStatus = {
-    Todo: tickets.filter((ticket) => ticket.status === "Todo"),
-    "In Progress": tickets.filter((ticket) => ticket.status === "In Progress"),
-    Blocked: tickets.filter((ticket) => ticket.status === "Blocked"),
-    Done: tickets.filter((ticket) => ticket.status === "Done"),
+    Todo: filteredTickets.filter((ticket) => ticket.status === "Todo"),
+    "In Progress": filteredTickets.filter((ticket) => ticket.status === "In Progress"),
+    Blocked: filteredTickets.filter((ticket) => ticket.status === "Blocked"),
+    Done: filteredTickets.filter((ticket) => ticket.status === "Done"),
+  }
+
+  // Calculate ticket counts for the status header
+  const totalTickets = filteredTickets.length
+  const ticketCounts = {
+    Todo: ticketsByStatus.Todo.length,
+    "In Progress": ticketsByStatus["In Progress"].length,
+    Blocked: ticketsByStatus.Blocked.length,
+    Done: ticketsByStatus.Done.length,
   }
 
   return (
@@ -225,6 +294,22 @@ export default function SprintBoardPage() {
         </Dialog>
       </div>
 
+      {/* Assignee filter row */}
+      <AssigneeFilter
+        assignees={assignees}
+        selectedAssignee={selectedAssignee}
+        onSelectAssignee={handleSelectAssignee}
+      />
+
+      {/* Status summary */}
+      {selectedAssignee && (
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-sm font-medium">
+            Showing {totalTickets} ticket{totalTickets !== 1 ? "s" : ""} assigned to {selectedAssignee}
+          </span>
+        </div>
+      )}
+
       <div className="grid gap-6 md:grid-cols-4">
         {Object.entries(ticketsByStatus).map(([status, statusTickets]) => (
           <Card
@@ -237,6 +322,8 @@ export default function SprintBoardPage() {
               <CardTitle className="text-lg">{status}</CardTitle>
               <CardDescription>
                 {statusTickets.length} ticket{statusTickets.length !== 1 ? "s" : ""}
+                {selectedAssignee &&
+                  ` (${ticketCounts[status as keyof typeof ticketCounts]}/${tickets.filter((t) => t.status === status).length} total)`}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-1 overflow-auto">
@@ -272,7 +359,11 @@ export default function SprintBoardPage() {
                   <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
                     <AlertCircle className="h-8 w-8 text-muted-foreground" />
                     <h3 className="mt-2 text-sm font-medium">No tickets</h3>
-                    <p className="mt-1 text-xs text-muted-foreground">Drag and drop tickets here.</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {selectedAssignee
+                        ? `No ${status.toLowerCase()} tickets assigned to ${selectedAssignee}`
+                        : "Drag and drop tickets here."}
+                    </p>
                   </div>
                 )}
               </div>
