@@ -14,7 +14,6 @@ model WikiPage {
   id        String   @id @default(cuid())
   title     String
   content   String
-  slug      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   author    User     @relation(fields: [authorId], references: [id])
@@ -24,20 +23,22 @@ model WikiPage {
 model Team {
   id              String   @id @default(cuid())
   name            String
-  description     String
+  description     String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   members         User[]
+  ownerId         String
   sprints         Sprint[] @relation("TeamSprints")
   tickets         Ticket[] @relation("TeamTickets")
   currentSprintId String?
+  nextSprintId    String?
 }
 
 model Sprint {
   id          String   @id @default(cuid())
   title       String
-  description String
-  status      String
+  description String?
+  completed   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   tickets     Ticket[]
@@ -48,17 +49,20 @@ model Sprint {
 model Ticket {
   id          String    @id @default(cuid())
   title       String
-  description String
-  status      String
+  description String?
+  status      String    @default("OPEN")
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  assignee    User?     @relation(fields: [userId], references: [id])
+  assignee    User?     @relation(name: "AssignedTickets", fields: [userId], references: [id])
   userId      String?
+  reporter    User      @relation(name: "ReportedTickets", fields: [reporterId], references: [id])
+  reporterId  String
   comments    Comment[]
   Sprint      Sprint?   @relation(fields: [sprintId], references: [id])
   sprintId    String?
   Team        Team      @relation("TeamTickets", fields: [teamId], references: [id])
   teamId      String
+  User        User?     @relation(fields: [userId], references: [id])
 }
 
 model Comment {
@@ -84,11 +88,13 @@ model User {
   Account         Account[]
   Session         Session[]
   Authenticator   Authenticator[]
-  assignedTicekts Ticket[]
   comments        Comment[]
   Team            Team?           @relation(fields: [teamId], references: [id])
   teamId          String?
   WikiPage        WikiPage[]
+  Ticket          Ticket[]
+  AssignedTickets Ticket[]        @relation("AssignedTickets")
+  ReportedTickets Ticket[]        @relation("ReportedTickets")
 
   @@index([email])
   @@map("users")
