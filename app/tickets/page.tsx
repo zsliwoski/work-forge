@@ -143,6 +143,12 @@ export default function TicketsPage() {
     Backlog: true,
   })
 
+  // Mock selectedTeam data
+  const selectedTeam = {
+    id: "team-1",
+    name: "Development Team",
+  }
+
   const filteredTickets = tickets.filter(
     (ticket) =>
       ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -199,8 +205,14 @@ export default function TicketsPage() {
   }
 
   const handleTicketClick = (ticket: (typeof tickets)[0]) => {
-    setSelectedTicket(ticket)
-    setIsPreviewOpen(true)
+    if (selectedTeam) {
+      // For direct navigation, uncomment this:
+      // router.push(`/${selectedTeam.id}/tickets/${ticket.id}`)
+
+      // For dialog preview, keep this:
+      setSelectedTicket(ticket)
+      setIsPreviewOpen(true)
+    }
   }
 
   const handleSaveTicket = (updatedTicket: (typeof tickets)[0]) => {

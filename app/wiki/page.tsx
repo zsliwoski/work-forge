@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -9,11 +10,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
 import { FileText, Plus, Search } from "lucide-react"
 import ReactMarkdown from "react-markdown"
+import { useTeam } from "@/contexts/team-context"
 
 // Mock wiki data
 const mockWikiPages = [
   {
     id: 1,
+    slug: "getting-started",
     title: "Getting Started",
     content:
       "# Getting Started\n\nWelcome to WorkForge! This guide will help you get started with our platform.\n\n## First Steps\n\n1. Create your account\n2. Set up your profile\n3. Join a team\n\n## Key Features\n\n- **Ticketing System**: Track and manage tasks\n- **Wiki**: Document your processes\n- **Sprint Board**: Visualize your workflow\n\n```js\n// Example code\nconst greeting = 'Hello, WorkForge!';\nconsole.log(greeting);\n```",
@@ -22,6 +25,7 @@ const mockWikiPages = [
   },
   {
     id: 2,
+    slug: "api-documentation",
     title: "API Documentation",
     content:
       '# API Documentation\n\nThis document outlines the API endpoints available in WorkForge.\n\n## Authentication\n\nAll API requests require authentication using a JWT token.\n\n```\nAuthorization: Bearer <your_token>\n```\n\n## Endpoints\n\n### GET /api/tickets\n\nReturns a list of all tickets.\n\n### POST /api/tickets\n\nCreates a new ticket.\n\n### GET /api/tickets/:id\n\nReturns details for a specific ticket.\n\n## Response Format\n\nAll responses are in JSON format with the following structure:\n\n```json\n{\n  "success": true,\n  "data": {},\n  "message": ""\n}\n```',
@@ -30,6 +34,7 @@ const mockWikiPages = [
   },
   {
     id: 3,
+    slug: "best-practices",
     title: "Best Practices",
     content:
       "# Best Practices\n\n## Ticket Management\n\n- Use clear, descriptive titles\n- Add detailed descriptions\n- Link related tickets\n- Update status regularly\n\n## Sprint Planning\n\n1. Review backlog items\n2. Estimate effort\n3. Set realistic goals\n4. Assign responsibilities\n\n## Documentation\n\n- Keep the wiki up-to-date\n- Use markdown for formatting\n- Include examples\n- Link related documents\n\n> **Tip**: Regular updates to documentation save time in the long run.",
@@ -39,7 +44,10 @@ const mockWikiPages = [
 ]
 
 export default function WikiPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
+  const { selectedTeam } = useTeam()
   const [wikiPages, setWikiPages] = useState(mockWikiPages)
   const [selectedPage, setSelectedPage] = useState(wikiPages[0])
   const [searchQuery, setSearchQuery] = useState("")
@@ -47,11 +55,29 @@ export default function WikiPage() {
   const [editContent, setEditContent] = useState("")
   const [editTitle, setEditTitle] = useState("")
 
+  // Handle URL parameters for selecting specific wiki pages
+  useEffect(() => {
+    const pageSlug = searchParams.get("page")
+    if (pageSlug) {
+      const page = wikiPages.find((p) => p.slug === pageSlug)
+      if (page) {
+        setSelectedPage(page)
+        setIsEditing(false)
+      }
+    }
+  }, [searchParams, wikiPages])
+
   const filteredPages = wikiPages.filter((page) => page.title.toLowerCase().includes(searchQuery.toLowerCase()))
 
   const handlePageSelect = (page: (typeof wikiPages)[0]) => {
     setSelectedPage(page)
     setIsEditing(false)
+
+    // Update URL with the selected page slug without full page reload
+    if (selectedTeam) {
+      const newUrl = `/${selectedTeam.id}/wiki?page=${page.slug}`
+      router.push(newUrl, { scroll: false })
+    }
   }
 
   const handleEdit = () => {
@@ -64,11 +90,11 @@ export default function WikiPage() {
     const updatedPages = wikiPages.map((page) =>
       page.id === selectedPage.id
         ? {
-          ...page,
-          title: editTitle,
-          content: editContent,
-          updatedAt: new Date().toISOString().split("T")[0],
-        }
+            ...page,
+            title: editTitle,
+            content: editContent,
+            updatedAt: new Date().toISOString().split("T")[0],
+          }
         : page,
     )
     setWikiPages(updatedPages)
@@ -88,6 +114,7 @@ export default function WikiPage() {
   const handleCreateNew = () => {
     const newPage = {
       id: wikiPages.length + 1,
+      slug: "new-page",
       title: "New Page",
       content: "# New Page\n\nStart writing your content here...",
       createdAt: new Date().toISOString().split("T")[0],
@@ -177,7 +204,7 @@ export default function WikiPage() {
                 <Textarea
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
-                  className="min-h-[500px] font-mono"
+                  className="min-h-[500px] font-mono resize-none"
                 />
               </TabsContent>
             </Tabs>

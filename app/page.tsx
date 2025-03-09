@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle, Clock, FileText, Ticket, Users } from "lucide-react"
 import { TicketPreviewDialog } from "@/components/ticket-preview-dialog"
@@ -19,6 +20,7 @@ import {
   Cell,
   Sector,
 } from "recharts"
+import { useTeam } from "@/contexts/team-context"
 
 // Mock ticket data for dashboard
 const mockRecentTickets = [
@@ -180,17 +182,28 @@ const renderActiveShape = (props: any) => {
 
 export default function Dashboard() {
   const router = useRouter()
+  const { selectedTeam } = useTeam()
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
 
+  // Redirect to team-specific dashboard if we're at the root
+  useEffect(() => {
+    if (selectedTeam && window.location.pathname === "/") {
+      router.push(`/${selectedTeam.id}`)
+    }
+  }, [selectedTeam, router])
+
   const handleTicketClick = (ticket: any) => {
-    setSelectedTicket(ticket)
-    setIsPreviewOpen(true)
+    if (selectedTeam) {
+      router.push(`/${selectedTeam.id}/tickets/${ticket.id}`)
+    }
   }
 
   const handleWikiClick = (wikiPage: any) => {
-    router.push(`/wiki?page=${wikiPage.slug}`)
+    if (selectedTeam) {
+      router.push(`/${selectedTeam.id}/wiki?page=${wikiPage.slug}`)
+    }
   }
 
   const onPieEnter = (_: any, index: number) => {
@@ -200,7 +213,10 @@ export default function Dashboard() {
   return (
     <div className="flex flex-col gap-6 p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <h1 className="text-3xl font-bold">
+          Dashboard
+          {selectedTeam && <span className="ml-2 text-muted-foreground">({selectedTeam.name})</span>}
+        </h1>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">

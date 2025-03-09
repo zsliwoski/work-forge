@@ -4,13 +4,15 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { Sidebar } from "@/components/sidebar"
 import { Toaster } from "@/components/ui/toaster"
+import { TeamProvider } from "@/contexts/team-context"
+import { TeamDebug } from "@/components/team-debug"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "WorkForge",
   description: "Ticketing system and Wiki Web app",
-  generator: 'create-next-app',
+    generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -21,11 +23,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <div className="flex h-screen overflow-hidden">
-          <Sidebar />
-          <main className="flex-1 overflow-auto bg-background">{children}</main>
-        </div>
-        <Toaster />
+        <TeamProvider>
+          <div className="flex h-screen overflow-hidden">
+            <Sidebar />
+            <main className="flex-1 overflow-auto bg-background">{children}</main>
+          </div>
+          <Toaster />
+          <TeamDebug />
+        </TeamProvider>
       </body>
     </html>
   )

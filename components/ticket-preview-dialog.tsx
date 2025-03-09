@@ -1,18 +1,20 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/components/ui/use-toast"
-import { Clock, MessageSquare, Pencil, Save, X, User, Tag } from "lucide-react"
+import { Clock, MessageSquare, Pencil, Save, X, User, Tag, ExternalLink } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
+import { useTeam } from "@/contexts/team-context"
 
 interface TicketComment {
   id: string
@@ -43,6 +45,8 @@ interface TicketPreviewDialogProps {
 
 export function TicketPreviewDialog({ ticket, open, onOpenChange, onEdit, onSave }: TicketPreviewDialogProps) {
   const { toast } = useToast()
+  const router = useRouter()
+  const { selectedTeam } = useTeam()
   const [newComment, setNewComment] = useState("")
   const [isEditing, setIsEditing] = useState(false)
   const [editedTicket, setEditedTicket] = useState<Ticket | null>(null)
@@ -119,6 +123,13 @@ export function TicketPreviewDialog({ ticket, open, onOpenChange, onEdit, onSave
         ...editedTicket,
         tags: editedTicket.tags.filter((t) => t !== tag),
       })
+    }
+  }
+
+  const handleViewFullPage = () => {
+    if (selectedTeam && ticket) {
+      router.push(`/${selectedTeam.id}/tickets/${ticket.id}`)
+      onOpenChange(false)
     }
   }
 
@@ -333,6 +344,10 @@ export function TicketPreviewDialog({ ticket, open, onOpenChange, onEdit, onSave
                   Close
                 </Button>
                 <div className="flex gap-2">
+                  <Button onClick={handleViewFullPage} variant="outline">
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    View Full Page
+                  </Button>
                   <Button onClick={handleAddComment}>Add Comment</Button>
                   <Button onClick={handleEdit} variant="secondary">
                     <Pencil className="mr-2 h-4 w-4" />
