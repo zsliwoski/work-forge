@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/use-toast"
+import { signOut, useSession } from "next-auth/react"
 
 interface UserBadgeProps {
   expanded: boolean
@@ -19,18 +20,20 @@ interface UserBadgeProps {
 
 export function UserBadge({ expanded }: UserBadgeProps) {
   const { toast } = useToast()
+  const session = useSession()
   // Mock user data
-  const user = {
-    name: "John Doe",
-    email: "john@example.com",
-    image: "/placeholder.svg?height=32&width=32",
+  if (session) {
+
   }
+
+  const sessionUser = session?.data?.user
 
   const handleLogout = () => {
     toast({
       title: "Logged out",
       description: "You have been successfully logged out.",
     })
+    signOut({ callbackUrl: "/sign-in" });
   }
 
   return (
@@ -44,23 +47,23 @@ export function UserBadge({ expanded }: UserBadgeProps) {
           )}
         >
           <Avatar className="h-8 w-8">
-            <AvatarImage src={user.image} alt={user.name} />
+            <AvatarImage src={sessionUser?.image} alt={sessionUser?.name} />
             <AvatarFallback>
               <User className="h-4 w-4" />
             </AvatarFallback>
           </Avatar>
           {expanded && (
             <div className="flex flex-col items-start text-left">
-              <span className="text-sm font-medium">{user.name}</span>
-              <span className="text-xs text-muted-foreground truncate max-w-[140px]">{user.email}</span>
+              <span className="text-sm font-medium">{sessionUser?.name}</span>
+              <span className="text-xs text-muted-foreground truncate max-w-[140px]">{sessionUser?.email}</span>
             </div>
           )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <div className="flex flex-col space-y-1 p-2">
-          <p className="text-sm font-medium">{user.name}</p>
-          <p className="text-xs text-muted-foreground">{user.email}</p>
+          <p className="text-sm font-medium">{sessionUser?.name}</p>
+          <p className="text-xs text-muted-foreground">{sessionUser?.email}</p>
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>

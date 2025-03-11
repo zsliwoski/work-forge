@@ -15,6 +15,12 @@ export default function TeamTickets({ params }: { params: { teamId: string } }) 
     }
   }, [teamId, selectedTeam, setSelectedTeam])
 
+  useTeam(() => {
+    return {
+      teamId,
+    }
+  });
+
   return <TicketsPage />
 }
 

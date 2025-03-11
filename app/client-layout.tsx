@@ -1,0 +1,33 @@
+"use client"
+
+import type React from "react"
+import { usePathname } from "next/navigation"
+import { Sidebar } from "@/components/sidebar"
+import { Toaster } from "@/components/ui/toaster"
+import { TeamProvider } from "@/contexts/team-context"
+import { TeamDebug } from "@/components/team-debug"
+
+export default function ClientLayout({
+    children,
+}: Readonly<{
+    children: React.ReactNode
+}>) {
+    const pathname = usePathname()
+    const showSidebar = pathname !== "/landing-page"
+        && pathname !== "/sign-in"
+        && pathname !== "/create-organization"
+        && pathname !== "/organizations"
+        && !pathname.startsWith("/edit-organization");
+
+    return (
+        <TeamProvider>
+            <div className="flex h-screen overflow-hidden">
+                {showSidebar && <Sidebar />}
+                <main className="flex-1 overflow-auto bg-background">{children}</main>
+            </div>
+            <Toaster />
+            {/*<TeamDebug />*/}
+        </TeamProvider>
+    )
+}
+

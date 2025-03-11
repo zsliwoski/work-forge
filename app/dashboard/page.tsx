@@ -21,7 +21,6 @@ import {
   Sector,
 } from "recharts"
 import { useTeam } from "@/contexts/team-context"
-import { useSession } from "next-auth/react"
 
 // Mock ticket data for dashboard
 const mockRecentTickets = [
@@ -182,7 +181,6 @@ const renderActiveShape = (props: any) => {
 }
 
 export default function Dashboard() {
-  const session = useSession()
   const router = useRouter()
   const { selectedTeam } = useTeam()
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null)
@@ -191,14 +189,8 @@ export default function Dashboard() {
 
   // Redirect to team-specific dashboard if we're at the root
   useEffect(() => {
-    if (!session) {
-      router.push("/landing-page")
-    } else if (session.status === "unauthenticated") {
-      router.push("/sign-in");
-    } else {
-      if (selectedTeam && window.location.pathname === "/") {
-        router.push(`/${selectedTeam.id}`)
-      }
+    if (selectedTeam && window.location.pathname === "/") {
+      router.push(`/${selectedTeam.id}`)
     }
   }, [selectedTeam, router])
 
@@ -216,11 +208,6 @@ export default function Dashboard() {
 
   const onPieEnter = (_: any, index: number) => {
     setActiveIndex(index)
-  }
-
-  // TODO: styled redirect to signin
-  if (!session || session.status === "unauthenticated") {
-    return <div>Redirecting...</div>
   }
 
   return (

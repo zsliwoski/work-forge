@@ -10,11 +10,15 @@ import { UserBadge } from "./user-badge"
 import { TeamSelector } from "./team-selector"
 import { useTeam } from "@/contexts/team-context"
 import { Separator } from "@/components/ui/separator"
+import { OrganizationBadge } from "@/components/organization-badge"
 
 export function Sidebar() {
+
   const [expanded, setExpanded] = useState(true)
   const pathname = usePathname()
+
   const { selectedTeam } = useTeam()
+  const { selectedOrganization } = { selectedOrganization: { name: "acme-1", icon: "i" } }//useOrganization()
 
   const toggleSidebar = () => {
     setExpanded(!expanded)
@@ -77,13 +81,18 @@ export function Sidebar() {
       </div>
 
       {expanded && (
-        <div className="px-3 mb-2">
+        <div className="px-3 mb-2 space-y-2">
+          <OrganizationBadge />
           <TeamSelector />
         </div>
       )}
 
+
       {!expanded && (
         <div className="flex justify-center my-2">
+          <div className="h-8 w-8 flex items-center justify-center rounded-md bg-primary/10 text-primary">
+            {selectedOrganization?.icon}
+          </div>
           <div className="h-8 w-8 flex items-center justify-center rounded-md bg-primary/10 text-primary">
             {selectedTeam?.icon}
           </div>

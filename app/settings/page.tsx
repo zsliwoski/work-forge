@@ -6,8 +6,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { AddTeamMemberDialog } from "@/components/add-team-member-dialog"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function SettingsPage() {
+  const { toast } = useToast()
+
   return (
     <div className="flex flex-col gap-6 p-6">
       <div className="flex items-center justify-between">
@@ -179,9 +183,15 @@ export default function SettingsPage() {
                         </Button>
                       </div>
                     ))}
-                    <Button variant="outline" className="mt-2 w-full">
-                      Add Team Member
-                    </Button>
+                    <AddTeamMemberDialog
+                      onAddMember={(email, role) => {
+                        toast({
+                          title: "Team member invited",
+                          description: `Invitation sent to ${email} with ${role} role`,
+                        })
+                        // In a real app, you would make an API call here to send the invitation
+                      }}
+                    />
                   </div>
                 </div>
               </div>
