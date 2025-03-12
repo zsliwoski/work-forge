@@ -15,12 +15,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
 import { AlertCircle, ChevronDown, ChevronUp, Clock, Plus, Search } from "lucide-react"
 import { TicketPreviewDialog } from "@/components/ticket-preview-dialog"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import * as z from "zod"
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { ticketSchema } from "@/lib/schema"
 
 // Mock ticket data
 const mockTickets = [
@@ -114,6 +118,8 @@ const mockTickets = [
   },
 ]
 
+type TicketFormValues = z.infer<typeof ticketSchema>
+
 // Update the priorityColors object to use solid background colors for the priority bars
 const priorityColors = {
   High: "bg-red-500",
@@ -125,15 +131,6 @@ export default function TicketsPage() {
   const { toast } = useToast()
   const [tickets, setTickets] = useState(mockTickets)
   const [searchQuery, setSearchQuery] = useState("")
-  const [newTicket, setNewTicket] = useState({
-    title: "",
-    description: "",
-    status: "Backlog",
-    priority: "Medium",
-    assignee: "John Doe",
-    tags: [],
-  })
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [newTag, setNewTag] = useState("")
   const [selectedTicket, setSelectedTicket] = useState<(typeof tickets)[0] | null>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
@@ -143,9 +140,22 @@ export default function TicketsPage() {
     Backlog: true,
   })
 
+  // Replace the newTicket state with form handling
+  const form = useForm<TicketFormValues>({
+    resolver: zodResolver(ticketSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      priority: "NONE",
+      tags: [],
+    },
+  })
+
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+
   // Mock selectedTeam data
   const selectedTeam = {
-    id: "team-1",
+    id: "cm856cns70001vwloi0zmt9yh",
     name: "Development Team",
   }
 
@@ -156,52 +166,72 @@ export default function TicketsPage() {
       ticket.id.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
-  const handleCreateTicket = () => {
-    const id = `TICKET-${String(tickets.length + 1).padStart(3, "0")}`
-    const createdAt = new Date().toISOString().split("T")[0]
+  const handleCreateTicket = (values: TicketFormValues) => {
 
-    setTickets([
-      ...tickets,
-      {
-        ...newTicket,
-        id,
-        createdAt,
-        tags: newTicket.tags || [],
+    fetch("/api/tickets/" + selectedTeam.id, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-    ])
-
-    setNewTicket({
-      title: "",
-      description: "",
-      status: "Backlog",
-      priority: "Medium",
-      assignee: "John Doe",
-      tags: [],
+      body: JSON.stringify(values),
     })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to create ticket")
+        }
+        return response.json()
+      })
+      .then((data) => {
+        const id = data.id
+        const createdAt = new Date().toISOString().split("T")[0]
 
-    setIsDialogOpen(false)
+        setTickets([
+          ...tickets,
+          {
+            ...values,
+            id,
+            createdAt,
+            tags: values.tags || [],
+          },
+        ])
 
-    toast({
-      title: "Ticket created",
-      description: `Ticket ${id} has been created successfully.`,
-    })
+        form.reset({
+          title: "",
+          description: "",
+          priority: "NONE",
+          assigneeId: undefined,
+          tags: [],
+        })
+
+        setIsDialogOpen(false)
+
+        toast({
+          title: "Ticket created",
+          description: `Ticket ${id} has been created successfully.`,
+        })
+      })
+      .catch((error) => {
+        toast({
+          title: "Error",
+          description: error.message,
+        })
+      })
   }
 
   const handleAddTag = () => {
-    if (newTag && !newTicket.tags.includes(newTag)) {
-      setNewTicket({
-        ...newTicket,
-        tags: [...newTicket.tags, newTag],
-      })
+    if (newTag && !form.getValues().tags.includes(newTag)) {
+      const currentTags = form.getValues().tags || []
+      form.setValue("tags", [...currentTags, newTag])
       setNewTag("")
     }
   }
 
   const handleRemoveTag = (tag: string) => {
-    setNewTicket({
-      ...newTicket,
-      tags: newTicket.tags.filter((t) => t !== tag),
-    })
+    const currentTags = form.getValues().tags || []
+    form.setValue(
+      "tags",
+      currentTags.filter((t) => t !== tag),
+    )
   }
 
   const handleTicketClick = (ticket: (typeof tickets)[0]) => {
@@ -272,112 +302,150 @@ export default function TicketsPage() {
               <Plus className="mr-2 h-4 w-4" /> New Ticket
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px] max-h-[85vh] flex flex-col">
+          <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Ticket</DialogTitle>
               <DialogDescription>Fill in the details to create a new ticket.</DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  value={newTicket.title}
-                  onChange={(e) => setNewTicket({ ...newTicket, title: e.target.value })}
-                  placeholder="Enter ticket title"
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleCreateTicket)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Title</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Enter ticket title" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={newTicket.description}
-                  onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
-                  placeholder="Enter ticket description (supports markdown)"
-                  className="min-h-[120px] resize-none"
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          placeholder="Enter ticket description (supports markdown)"
+                          className="min-h-[120px] resize-none"
+                        />
+                      </FormControl>
+                      <FormDescription>Supports markdown formatting</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Select
-                    value={newTicket.status}
-                    onValueChange={(value) => setNewTicket({ ...newTicket, status: value })}
-                  >
-                    <SelectTrigger id="status">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Current Sprint">Current Sprint</SelectItem>
-                      <SelectItem value="Next Sprint">Next Sprint</SelectItem>
-                      <SelectItem value="Backlog">Backlog</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-4">
+                  {/*<FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Status</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Current Sprint">Current Sprint</SelectItem>
+                            <SelectItem value="Next Sprint">Next Sprint</SelectItem>
+                            <SelectItem value="Backlog">Backlog</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />*/}
+                  <FormField
+                    control={form.control}
+                    name="priority"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Priority</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={"NONE"}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select priority" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="NONE">None</SelectItem>
+                            <SelectItem value="LOW">Low</SelectItem>
+                            <SelectItem value="MEDIUM">Medium</SelectItem>
+                            <SelectItem value="HIGH">High</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="priority">Priority</Label>
-                  <Select
-                    value={newTicket.priority}
-                    onValueChange={(value) => setNewTicket({ ...newTicket, priority: value })}
-                  >
-                    <SelectTrigger id="priority">
-                      <SelectValue placeholder="Select priority" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="High">High</SelectItem>
-                      <SelectItem value="Medium">Medium</SelectItem>
-                      <SelectItem value="Low">Low</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="assignee">Assignee</Label>
-                <Select
-                  value={newTicket.assignee}
-                  onValueChange={(value) => setNewTicket({ ...newTicket, assignee: value })}
-                >
-                  <SelectTrigger id="assignee">
-                    <SelectValue placeholder="Select assignee" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="John Doe">John Doe</SelectItem>
-                    <SelectItem value="Jane Smith">Jane Smith</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="tags">Tags</Label>
-                <div className="flex gap-2">
-                  <Input id="tags" value={newTag} onChange={(e) => setNewTag(e.target.value)} placeholder="Add a tag" />
-                  <Button type="button" onClick={handleAddTag} variant="outline">
-                    Add
+                <FormField
+                  control={form.control}
+                  name="assigneeId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Assignee</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select assignee" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="cm84o8phr0000vwkgc89mrjhj">John Doe</SelectItem>
+                          <SelectItem value="Jane Smith">Jane Smith</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {/*<FormField
+                  control={form.control}
+                  name="tags"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tags</FormLabel>
+                      <div className="flex gap-2">
+                        <Input value={newTag} onChange={(e) => setNewTag(e.target.value)} placeholder="Add a tag" />
+                        <Button type="button" onClick={handleAddTag} variant="outline">
+                          Add
+                        </Button>
+                      </div>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {field.value?.map((tag) => (
+                          <Badge key={tag} variant="outline" className="flex items-center gap-1">
+                            {tag}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveTag(tag)}
+                              className="ml-1 rounded-full text-muted-foreground hover:text-foreground"
+                            >
+                              ×
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />*/}
+                <div className="flex justify-between mt-4">
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                    Cancel
                   </Button>
+                  <Button type="submit">Create Ticket</Button>
                 </div>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {newTicket.tags.map((tag) => (
-                    <Badge key={tag} variant="outline" className="flex items-center gap-1">
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTag(tag)}
-                        className="ml-1 rounded-full text-muted-foreground hover:text-foreground"
-                      >
-                        ×
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-between mt-4">
-              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="button" onClick={handleCreateTicket}>
-                Create Ticket
-              </Button>
-            </div>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
       </div>

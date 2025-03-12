@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Plus, Edit, ArrowLeft } from "lucide-react"
 
 export default function OrganizationsPage() {
-    const { organizations, selectedOrganization } = { organizations: [], selectedOrganization: { name: "acme", icon: "i" } }//useOrganization()
+    const { organizations, selectedOrganization } = { organizations: [{ name: "acme", icon: "i" }, { name: "incoportae", icon: "b" }], selectedOrganization: { name: "acme", icon: "i" } }//useOrganization()
     const router = useRouter()
 
     return (

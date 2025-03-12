@@ -10,13 +10,45 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Relationships
+model UserToTeam {
+  id        String   @id @default(cuid())
+  User      User     @relation("UserRoles", fields: [userId], references: [id])
+  userId    String
+  Team      Team     @relation("TeamRoles", fields: [teamId], references: [id])
+  teamId    String
+  role      Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TagsOnTicket {
+  id       String @id @default(cuid())
+  ticket   Ticket @relation(fields: [ticketId], references: [id])
+  ticketId String
+  tag      Tag    @relation(fields: [tagId], references: [id])
+  tagId    String
+}
+
+// Models
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  teams       Team[]
+  Owner       User     @relation("OrganizationOwner", fields: [ownerId], references: [id])
+  ownerId     String
+}
+
 model WikiPage {
   id        String   @id @default(cuid())
   title     String
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  author    User     @relation(fields: [authorId], references: [id])
+  author    User     @relation("AuthoredPages", fields: [authorId], references: [id])
   authorId  String
 }
 
@@ -26,12 +58,14 @@ model Team {
   description     String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  members         User[]
-  ownerId         String
   sprints         Sprint[] @relation("TeamSprints")
   tickets         Ticket[] @relation("TeamTickets")
   currentSprintId String?
   nextSprintId    String?
+
+  Organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  TeamRoles      UserToTeam[] @relation("TeamRoles")
 }
 
 model Sprint {
@@ -46,23 +80,33 @@ model Sprint {
   teamId      String
 }
 
+// TICKETS
 model Ticket {
-  id          String    @id @default(cuid())
-  title       String
-  description String?
-  status      String    @default("OPEN")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  assignee    User?     @relation(name: "AssignedTickets", fields: [userId], references: [id])
-  userId      String?
-  reporter    User      @relation(name: "ReportedTickets", fields: [reporterId], references: [id])
-  reporterId  String
-  comments    Comment[]
-  Sprint      Sprint?   @relation(fields: [sprintId], references: [id])
-  sprintId    String?
-  Team        Team      @relation("TeamTickets", fields: [teamId], references: [id])
-  teamId      String
-  User        User?     @relation(fields: [userId], references: [id])
+  id           String         @id @default(cuid())
+  title        String
+  description  String?
+  priority     String         @default("NONE")
+  status       String         @default("OPEN")
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  assignee     User?          @relation(name: "AssignedTickets", fields: [assigneeId], references: [id])
+  assigneeId   String?
+  reporter     User           @relation(name: "ReportedTickets", fields: [reporterId], references: [id])
+  reporterId   String
+  comments     Comment[]
+  Sprint       Sprint?        @relation(fields: [sprintId], references: [id])
+  sprintId     String?
+  Team         Team           @relation("TeamTickets", fields: [teamId], references: [id])
+  teamId       String
+  TagsOnTicket TagsOnTicket[]
+}
+
+model Tag {
+  id           String         @id @default(cuid())
+  name         String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  TagsOnTicket TagsOnTicket[]
 }
 
 model Comment {
@@ -76,30 +120,36 @@ model Comment {
   ticketId  String
 }
 
+// USER 
 model User {
-  id              String          @id @default(cuid())
-  name            String?
-  email           String          @unique
-  emailVerified   Boolean?
-  image           String?
-  role            Int             @default(0)
-  updatedAt       DateTime        @updatedAt
-  createdAt       DateTime        @default(now())
-  Account         Account[]
-  Session         Session[]
-  Authenticator   Authenticator[]
+  // Default next-auth required fields
+  id            String          @id @default(cuid())
+  name          String?
+  email         String          @unique
+  emailVerified Boolean?
+  image         String?
+  role          Int             @default(0)
+  updatedAt     DateTime        @updatedAt
+  createdAt     DateTime        @default(now())
+  Account       Account[]
+  Session       Session[]
+  Authenticator Authenticator[]
+
+  // Relationships
+  AuthoredPages   WikiPage[] @relation("AuthoredPages")
+  AssignedTickets Ticket[]   @relation("AssignedTickets")
+  ReportedTickets Ticket[]   @relation("ReportedTickets")
   comments        Comment[]
-  Team            Team?           @relation(fields: [teamId], references: [id])
-  teamId          String?
-  WikiPage        WikiPage[]
-  Ticket          Ticket[]
-  AssignedTickets Ticket[]        @relation("AssignedTickets")
-  ReportedTickets Ticket[]        @relation("ReportedTickets")
+
+  // Permissions
+  OwnedOrganizations Organization[] @relation("OrganizationOwner")
+  TeamRoles          UserToTeam[]   @relation("UserRoles")
 
   @@index([email])
   @@map("users")
 }
 
+// USER AUTHENTICATION
 model Account {
   id                String   @id @default(cuid())
   userId            String

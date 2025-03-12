@@ -77,20 +77,33 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
     }
 
     // Parse the request body and validate it against the ticket schema
-    const body = await req.json();
-    const validationResult = ticketSchema.safeParse({ ...body, teamId, status: 'OPEN' });
+    let body = await req.json();
+    const validationResult = ticketSchema.safeParse({ ...body, status: 'OPEN' });
 
     if (!validationResult.success) {
+        console.log(validationResult.error)
         return NextResponse.json({ error: validationResult.error.errors }, { status: 400 });
     }
 
     try {
+        // Extract tags from the request body and delete them from the body
+        const tags = body.tags || [];
+        delete body.tags;
+
+        const row = {
+            ...body,
+            teamId: teamId,
+            status: 'OPEN',
+            reporterId: "cm85696e60000vwbkm55ax25t", // Hardcoded for now
+        };
+
         // Create a new ticket
         const ticket = await prisma.ticket.create({
-            data: body,
+            data: row,
         });
         return NextResponse.json(ticket, { status: 201 });
     } catch (error) {
+        console.log(error)
         return NextResponse.json({ error: 'Failed to create ticket' }, { status: 500 });
     }
 }

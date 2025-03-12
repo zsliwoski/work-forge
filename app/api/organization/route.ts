@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-/*
-import { organizationSchema } from '@/lib/schema';
+
+/*import { organizationSchema } from '@/lib/schema';
 // GET /api/organization
 export async function GET() {
     try {
@@ -22,7 +22,7 @@ export async function GET() {
     } catch (error) {
         return NextResponse.json({ error: 'Failed to fetch organizations' }, { status: 500 });
     }
-}
+}*/
 
 // POST /api/organization
 export async function POST(request: NextRequest) {
@@ -46,4 +46,3 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create organization' }, { status: 500 });
     }
 }
-*/

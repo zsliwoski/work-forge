@@ -11,6 +11,21 @@ import { useToast } from "@/components/ui/use-toast"
 import { FileText, Plus, Search } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import { useTeam } from "@/contexts/team-context"
+import { z } from "zod"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+
+// Wiki page validation schema
+const wikiPageSchema = z.object({
+  title: z
+    .string()
+    .min(3, { message: "Title must be at least 3 characters" })
+    .max(100, { message: "Title must be less than 100 characters" }),
+  content: z.string().min(10, { message: "Content must be at least 10 characters" }),
+})
+
+type WikiPageFormValues = z.infer<typeof wikiPageSchema>
 
 // Mock wiki data
 const mockWikiPages = [
@@ -52,8 +67,15 @@ export default function WikiPage() {
   const [selectedPage, setSelectedPage] = useState(wikiPages[0])
   const [searchQuery, setSearchQuery] = useState("")
   const [isEditing, setIsEditing] = useState(false)
-  const [editContent, setEditContent] = useState("")
-  const [editTitle, setEditTitle] = useState("")
+
+  // Form setup with Zod validation
+  const form = useForm<WikiPageFormValues>({
+    resolver: zodResolver(wikiPageSchema),
+    defaultValues: {
+      title: selectedPage.title,
+      content: selectedPage.content,
+    },
+  })
 
   // Handle URL parameters for selecting specific wiki pages
   useEffect(() => {
@@ -63,15 +85,31 @@ export default function WikiPage() {
       if (page) {
         setSelectedPage(page)
         setIsEditing(false)
+        form.reset({
+          title: page.title,
+          content: page.content,
+        })
       }
     }
-  }, [searchParams, wikiPages])
+  }, [searchParams, wikiPages, form])
+
+  // Update form values when selected page changes
+  useEffect(() => {
+    form.reset({
+      title: selectedPage.title,
+      content: selectedPage.content,
+    })
+  }, [selectedPage, form])
 
   const filteredPages = wikiPages.filter((page) => page.title.toLowerCase().includes(searchQuery.toLowerCase()))
 
   const handlePageSelect = (page: (typeof wikiPages)[0]) => {
     setSelectedPage(page)
     setIsEditing(false)
+    form.reset({
+      title: page.title,
+      content: page.content,
+    })
 
     // Update URL with the selected page slug without full page reload
     if (selectedTeam) {
@@ -81,36 +119,56 @@ export default function WikiPage() {
   }
 
   const handleEdit = () => {
-    setEditContent(selectedPage.content)
-    setEditTitle(selectedPage.title)
     setIsEditing(true)
   }
 
-  const handleSave = () => {
-    const updatedPages = wikiPages.map((page) =>
-      page.id === selectedPage.id
-        ? {
-            ...page,
-            title: editTitle,
-            content: editContent,
-            updatedAt: new Date().toISOString().split("T")[0],
-          }
-        : page,
-    )
-    setWikiPages(updatedPages)
-    setSelectedPage({
-      ...selectedPage,
-      title: editTitle,
-      content: editContent,
-      updatedAt: new Date().toISOString().split("T")[0],
+  const onSubmit = (values: WikiPageFormValues) => {
+    if (!selectedTeam) {
+      return
+    }
+    fetch("/api/wiki/" + selectedTeam.id, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(values),
     })
-    setIsEditing(false)
-    toast({
-      title: "Wiki page updated",
-      description: "Your changes have been saved successfully.",
-    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to create ticket")
+        }
+        return response.json()
+      }).then((data) => {
+        const updatedPages = wikiPages.map((page) =>
+          page.id === selectedPage.id
+            ? {
+              ...page,
+              title: data.title,
+              content: data.content,
+              updatedAt: new Date().toISOString().split("T")[0],
+            }
+            : page,
+        )
+        setWikiPages(updatedPages)
+        setSelectedPage({
+          ...selectedPage,
+          title: data.title,
+          content: data.content,
+          updatedAt: new Date().toISOString().split("T")[0],
+        })
+        setIsEditing(false)
+        toast({
+          title: "Wiki page updated",
+          description: "Your changes have been saved successfully.",
+        })
+      }).catch((error) => {
+        console.error(error)
+        toast({
+          title: "Error",
+          description: "Failed to update wiki page. Please try again.",
+        })
+      });
   }
-
   const handleCreateNew = () => {
     const newPage = {
       id: wikiPages.length + 1,
@@ -122,8 +180,10 @@ export default function WikiPage() {
     }
     setWikiPages([...wikiPages, newPage])
     setSelectedPage(newPage)
-    setEditTitle(newPage.title)
-    setEditContent(newPage.content)
+    form.reset({
+      title: newPage.title,
+      content: newPage.content,
+    })
     setIsEditing(true)
   }
 
@@ -170,21 +230,23 @@ export default function WikiPage() {
 
         <Card className="flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between">
-            {isEditing ? (
-              <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="text-xl font-bold" />
-            ) : (
-              <CardTitle>{selectedPage.title}</CardTitle>
+            {!isEditing && (
+              <>
+                <CardTitle>{selectedPage.title}</CardTitle>
+                <CardDescription>Last updated: {selectedPage.updatedAt}</CardDescription>
+                <Button onClick={handleEdit}>Edit</Button>
+              </>
             )}
-            <CardDescription>Last updated: {selectedPage.updatedAt}</CardDescription>
-            {isEditing ? (
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setIsEditing(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleSave}>Save</Button>
+            {isEditing && (
+              <div className="w-full flex justify-between items-center">
+                <CardTitle>Editing Wiki Page</CardTitle>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setIsEditing(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={form.handleSubmit(onSubmit)}>Save</Button>
+                </div>
               </div>
-            ) : (
-              <Button onClick={handleEdit}>Edit</Button>
             )}
           </CardHeader>
           <CardContent className="flex-1">
@@ -201,11 +263,43 @@ export default function WikiPage() {
                 <ReactMarkdown>{selectedPage.content}</ReactMarkdown>
               </TabsContent>
               <TabsContent value="edit" className="h-full">
-                <Textarea
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  className="min-h-[500px] font-mono resize-none"
-                />
+                {isEditing && (
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                      <FormField
+                        control={form.control}
+                        name="title"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Title</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormDescription>The title of your wiki page.</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="content"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Content</FormLabel>
+                            <FormControl>
+                              <Textarea {...field} className="min-h-[500px] font-mono resize-none" />
+                            </FormControl>
+                            <FormDescription>
+                              Write your content using Markdown. Headers, lists, code blocks, and other formatting are
+                              supported.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </form>
+                  </Form>
+                )}
               </TabsContent>
             </Tabs>
           </CardContent>

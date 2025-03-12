@@ -9,12 +9,13 @@ export const teamSchema = z.object({
 
 // Define the schema for the ticket object
 export const ticketSchema = z.object({
-    title: z.string().min(1, 'Title is required'),
+    title: z.string().min(3, "Title must be at least 3 characters").max(100, "Title must be less than 100 characters"),
     description: z.string().optional(),
-    teamId: z.string().min(1, 'Team ID is required'),
     status: z.enum(['OPEN', 'IN PROGRESS', 'BLOCKED', 'CLOSED']).optional(),
     sprintId: z.string().optional(),
-    reporterId: z.string().min(1, 'Reporter ID is required'),
+    priority: z.enum(['NONE', 'LOW', 'MEDIUM', 'HIGH']).optional(),
+    assigneeId: z.string().optional(),
+    tags: z.array(z.string()).max(10, "Must have less than 32 tags").optional().default([]),
 });
 
 // Define the schema for the sprint object
