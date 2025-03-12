@@ -14,7 +14,6 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { useTeam } from "@/contexts/team-context"
 
 interface TicketComment {
   id: string
@@ -46,7 +45,7 @@ interface TicketPreviewDialogProps {
 export function TicketPreviewDialog({ ticket, open, onOpenChange, onEdit, onSave }: TicketPreviewDialogProps) {
   const { toast } = useToast()
   const router = useRouter()
-  const { selectedTeam } = useTeam()
+  const { selectedTeam } = { selectedTeam: "team-1" }//useTeam()
   const [newComment, setNewComment] = useState("")
   const [isEditing, setIsEditing] = useState(false)
   const [editedTicket, setEditedTicket] = useState<Ticket | null>(null)
@@ -128,7 +127,7 @@ export function TicketPreviewDialog({ ticket, open, onOpenChange, onEdit, onSave
 
   const handleViewFullPage = () => {
     if (selectedTeam && ticket) {
-      router.push(`/${selectedTeam.id}/tickets/${ticket.id}`)
+      router.push(`/tickets/${selectedTeam}/${ticket.id}`)
       onOpenChange(false)
     }
   }

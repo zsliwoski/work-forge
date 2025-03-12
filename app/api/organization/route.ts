@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-
+import { organizationSchema } from '@/lib/schema';
 /*import { organizationSchema } from '@/lib/schema';
 // GET /api/organization
 export async function GET() {
@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
     // Parse the request body and validate it against the organization schema
     const body = await request.json();
     const validationResult = organizationSchema.safeParse(body);
+    const ownerId = ""; // HARDCODED FOR NOW
 
     if (!validationResult.success) {
         return NextResponse.json({ error: validationResult.error }, { status: 400 });

@@ -1,16 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { useTeam } from "@/contexts/team-context"
 import { Button } from "@/components/ui/button"
 import { ChevronDown, Check } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 
 export function TeamSelector() {
-  const { teams, selectedTeam, setSelectedTeam } = useTeam()
   const [open, setOpen] = useState(false)
-
+  const selectedTeam = { "id": "team-1", "name": "Team 1", "icon": "T1" }
   if (!selectedTeam) return null
 
   return (
@@ -25,7 +23,7 @@ export function TeamSelector() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-[--radix-dropdown-trigger-width]">
-        {teams.map((team) => (
+        {/*teams.map((team) => (
           <DropdownMenuItem
             key={team.id}
             className={cn("flex items-center gap-2 cursor-pointer", selectedTeam.id === team.id && "bg-accent")}
@@ -33,12 +31,12 @@ export function TeamSelector() {
               setSelectedTeam(team.id)
               setOpen(false)
             }}
-          >
+          >}
             <span className="text-lg">{team.icon}</span>
             <span>{team.name}</span>
             {selectedTeam.id === team.id && <Check className="h-4 w-4 ml-auto" />}
           </DropdownMenuItem>
-        ))}
+        ))}*/}
       </DropdownMenuContent>
     </DropdownMenu>
   )

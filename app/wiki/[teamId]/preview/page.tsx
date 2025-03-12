@@ -10,7 +10,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
 import { FileText, Plus, Search } from "lucide-react"
 import ReactMarkdown from "react-markdown"
-import { useTeam } from "@/contexts/team-context"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -58,11 +57,12 @@ const mockWikiPages = [
   },
 ]
 
-export default function WikiPage() {
+export default function WikiPage({ params }: { params: { teamId: string } }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
-  const { selectedTeam } = useTeam()
+  const { teamId } = params;
+  const { selectedTeam } = { selectedTeam: { id: teamId } }//useTeam()
   const [wikiPages, setWikiPages] = useState(mockWikiPages)
   const [selectedPage, setSelectedPage] = useState(wikiPages[0])
   const [searchQuery, setSearchQuery] = useState("")
@@ -113,7 +113,7 @@ export default function WikiPage() {
 
     // Update URL with the selected page slug without full page reload
     if (selectedTeam) {
-      const newUrl = `/${selectedTeam.id}/wiki?page=${page.slug}`
+      const newUrl = `?page=${page.slug}`
       router.push(newUrl, { scroll: false })
     }
   }
@@ -126,7 +126,7 @@ export default function WikiPage() {
     if (!selectedTeam) {
       return
     }
-    fetch("/api/wiki/" + selectedTeam.id, {
+    fetch("/api/wiki/" + "cm856cns70001vwloi0zmt9yh", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -135,7 +135,7 @@ export default function WikiPage() {
     })
       .then((response) => {
         if (!response.ok) {
-          throw new Error("Failed to create ticket")
+          throw new Error("Failed to create Wiki Page")
         }
         return response.json()
       }).then((data) => {

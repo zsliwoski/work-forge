@@ -82,3 +82,31 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ a
         return NextResponse.json({ error: 'Failed to delete article' }, { status: 500 });
     }
 }
+
+// POST /api/wiki/:teamId
+export async function POST(request: Request, { params }: { params: Promise<{ teamId: string }> }) {
+    const { teamId } = await params;
+    // Parse the request body and validate it against the article schema
+    const body = await request.json();
+    const validationResult = articleSchema.safeParse(body);
+
+    if (!validationResult.success) {
+        return NextResponse.json({ error: validationResult.error }, { status: 400 });
+    }
+
+    try {
+        const row = {
+            ...body,
+            authorId: 'cm85696e60000vwbkm55ax25t',
+            teamId,
+        }
+        // Create a new article
+        const article = await prisma.wikiPage.create({
+            data: row,
+        });
+        return NextResponse.json(article, { status: 200 });
+    } catch (error) {
+        console.error(error);
+        return NextResponse.json({ error: 'Failed to create article' }, { status: 500 });
+    }
+}

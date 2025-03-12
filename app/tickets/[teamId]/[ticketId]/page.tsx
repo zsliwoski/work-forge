@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useTeam } from "@/contexts/team-context"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -40,10 +39,9 @@ const mockTickets = [
 ]
 
 export default function TicketPage({ params }: { params: { teamId: string; ticketId: string } }) {
-  const { ticketId } = params
+  const { teamId, ticketId } = params
   const router = useRouter()
   const { toast } = useToast()
-  const { selectedTeam } = useTeam()
   const [ticket, setTicket] = useState<any>(null)
   const [newComment, setNewComment] = useState("")
   const [isLoading, setIsLoading] = useState(true)
@@ -84,8 +82,8 @@ export default function TicketPage({ params }: { params: { teamId: string; ticke
   }
 
   const handleBackToTickets = () => {
-    if (selectedTeam) {
-      router.push(`/${selectedTeam.id}/tickets`)
+    if (teamId) {
+      router.push(`/tickets/${teamId}`)
     }
   }
 

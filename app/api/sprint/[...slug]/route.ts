@@ -55,7 +55,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
 }
 
 // POST /api/sprint/:teamId
-export async function POST(req: NextRequest, { params }: { params: Promise<{ slug: string[] }> }) {
+/*export async function POST(req: NextRequest, { params }: { params: Promise<{ slug: string[] }> }) {
     const { slug } = await params;
     const teamId = slug[0];
 
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
         console.error(error);
         return NextResponse.json({ error: 'Failed to create sprint' }, { status: 500 });
     }
-}
+}*/
 
 // PUT /api/sprint/:teamId/:sprintId
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug: string[] }> }) {

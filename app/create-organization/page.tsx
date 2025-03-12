@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { Plus, Trash2, ArrowRight, ArrowLeft, Building, Users } from "lucide-react"
+import { Plus, Trash2, ArrowRight, ArrowLeft, Building, Users } from 'lucide-react'
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,20 +15,29 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useToast } from "@/components/ui/use-toast"
 import { Separator } from "@/components/ui/separator"
 
+// Update the schemas with more detailed validation
 // Organization schema
 const organizationSchema = z.object({
-    name: z.string().min(2, { message: "Organization name must be at least 2 characters." }),
-    description: z.string().optional(),
+    name: z.string()
+        .min(2, { message: "Organization name must be at least 2 characters." })
+        .max(50, { message: "Organization name must be less than 50 characters." }),
+    description: z.string()
+        .max(500, { message: "Description must be less than 500 characters." })
+        .optional(),
 })
 
 // Team schema
 const teamSchema = z.object({
-    name: z.string().min(2, { message: "Team name must be at least 2 characters." }),
+    name: z.string()
+        .min(2, { message: "Team name must be at least 2 characters." })
+        .max(50, { message: "Team name must be less than 50 characters." }),
     members: z.array(
         z.object({
-            email: z.string().email({ message: "Please enter a valid email address." }),
+            email: z.string()
+                .email({ message: "Please enter a valid email address." })
+                .min(1, { message: "Email is required." }),
         }),
-    ),
+    ).min(1, { message: "At least one team member is required." }),
 })
 
 // Combined schema for the entire form
@@ -330,4 +339,3 @@ export default function CreateOrganizationPage() {
         </div>
     )
 }
-

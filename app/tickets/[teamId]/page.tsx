@@ -3,6 +3,8 @@
 import type React from "react"
 
 import { useState } from "react"
+import useSWR from 'swr'
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -32,7 +34,7 @@ const mockTickets = [
     id: "TICKET-001",
     title: "Implement user authentication",
     description: "Add login and registration functionality with JWT authentication",
-    status: "Current Sprint",
+    sprintId: "Current Sprint",
     priority: "High",
     assignee: "John Doe",
     tags: ["Backend", "Security"],
@@ -50,7 +52,7 @@ const mockTickets = [
     id: "TICKET-002",
     title: "Design dashboard layout",
     description: "Create responsive dashboard layout with sidebar navigation",
-    status: "Current Sprint",
+    sprintId: "Current Sprint",
     priority: "Medium",
     assignee: "Jane Smith",
     tags: ["Frontend", "UI/UX"],
@@ -60,7 +62,7 @@ const mockTickets = [
     id: "TICKET-003",
     title: "Implement API endpoints for tickets",
     description: "Create RESTful API endpoints for ticket CRUD operations",
-    status: "Current Sprint",
+    sprintId: "Current Sprint",
     priority: "High",
     assignee: "John Doe",
     tags: ["Backend", "API"],
@@ -70,7 +72,7 @@ const mockTickets = [
     id: "TICKET-004",
     title: "Add markdown support for wiki",
     description: "Implement markdown rendering for wiki pages",
-    status: "Next Sprint",
+    sprintId: "Next Sprint",
     priority: "Medium",
     assignee: "Jane Smith",
     tags: ["Frontend", "Feature"],
@@ -80,7 +82,7 @@ const mockTickets = [
     id: "TICKET-005",
     title: "Implement drag and drop for sprint board",
     description: "Add drag and drop functionality for moving tickets between columns",
-    status: "Next Sprint",
+    sprintId: "Next Sprint",
     priority: "Low",
     assignee: "John Doe",
     tags: ["Frontend", "UX"],
@@ -90,7 +92,7 @@ const mockTickets = [
     id: "TICKET-006",
     title: "Set up CI/CD pipeline",
     description: "Configure GitHub Actions for continuous integration and deployment",
-    status: "Backlog",
+    sprintId: "Backlog",
     priority: "Medium",
     assignee: "Jane Smith",
     tags: ["DevOps", "Infrastructure"],
@@ -100,7 +102,7 @@ const mockTickets = [
     id: "TICKET-007",
     title: "Implement user roles and permissions",
     description: "Add role-based access control for different user types",
-    status: "Backlog",
+    sprintId: "Backlog",
     priority: "High",
     assignee: "John Doe",
     tags: ["Backend", "Security"],
@@ -110,7 +112,7 @@ const mockTickets = [
     id: "TICKET-008",
     title: "Add dark mode support",
     description: "Implement dark mode toggle and theme persistence",
-    status: "Backlog",
+    sprintId: "Backlog",
     priority: "Low",
     assignee: "Jane Smith",
     tags: ["Frontend", "UI"],
@@ -127,8 +129,11 @@ const priorityColors = {
   Low: "bg-green-500",
 }
 
-export default function TicketsPage() {
+const fetcher = (...args) => fetch(...args).then(res => res.json())
+
+export default function TicketsPage({ params }: { params: { teamId: string } }) {
   const { toast } = useToast()
+  const { teamId } = params
   const [tickets, setTickets] = useState(mockTickets)
   const [searchQuery, setSearchQuery] = useState("")
   const [newTag, setNewTag] = useState("")
@@ -139,6 +144,7 @@ export default function TicketsPage() {
     "Next Sprint": true,
     Backlog: true,
   })
+
 
   // Replace the newTicket state with form handling
   const form = useForm<TicketFormValues>({
@@ -159,6 +165,10 @@ export default function TicketsPage() {
     name: "Development Team",
   }
 
+  const { data, error, isLoading } = useSWR(`/api/tickets/${selectedTeam.id}`, fetcher, { revalidateOnFocus: true });
+  if (error) return <div>Failed to load</div>
+  if (isLoading) return <div>Loading...</div>
+  if (data) console.log(data)
   const filteredTickets = tickets.filter(
     (ticket) =>
       ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -260,13 +270,13 @@ export default function TicketsPage() {
     e.preventDefault()
   }
 
-  const handleDrop = (e: React.DragEvent, status: string) => {
+  const handleDrop = (e: React.DragEvent, sprintId: string) => {
     e.preventDefault()
     const ticketId = e.dataTransfer.getData("ticketId")
 
     const updatedTickets = tickets.map((ticket) => {
       if (ticket.id === ticketId) {
-        return { ...ticket, status }
+        return { ...ticket, sprintId }
       }
       return ticket
     })
@@ -275,7 +285,7 @@ export default function TicketsPage() {
 
     toast({
       title: "Ticket updated",
-      description: `Ticket moved to ${status}`,
+      description: `Ticket moved to ${sprintId}`,
     })
   }
 
@@ -286,10 +296,10 @@ export default function TicketsPage() {
     }))
   }
 
-  const ticketsByStatus = {
-    "Current Sprint": filteredTickets.filter((ticket) => ticket.status === "Current Sprint"),
-    "Next Sprint": filteredTickets.filter((ticket) => ticket.status === "Next Sprint"),
-    Backlog: filteredTickets.filter((ticket) => ticket.status === "Backlog"),
+  const ticketsBySprintId = {
+    "Current Sprint": filteredTickets.filter((ticket) => ticket.sprintId === "Current Sprint"),
+    "Next Sprint": filteredTickets.filter((ticket) => ticket.sprintId === "Next Sprint"),
+    Backlog: filteredTickets.filter((ticket) => ticket.sprintId === "Backlog"),
   }
 
   return (
@@ -462,30 +472,30 @@ export default function TicketsPage() {
       </div>
 
       <div className="flex flex-col gap-6">
-        {Object.entries(ticketsByStatus).map(([status, statusTickets]) => (
-          <Card key={status} className="flex flex-col">
+        {Object.entries(ticketsBySprintId).map(([sprintId, sprintIdTickets]) => (
+          <Card key={sprintId} className="flex flex-col">
             <CardHeader
               className="pb-2 cursor-pointer flex flex-row items-center justify-between"
-              onClick={() => toggleCategory(status)}
+              onClick={() => toggleCategory(sprintId)}
             >
               <div className="flex items-center">
-                <CardTitle className="text-lg">{status}</CardTitle>
+                <CardTitle className="text-lg">{sprintId}</CardTitle>
                 <Badge variant="outline" className="ml-2">
-                  {statusTickets.length} ticket{statusTickets.length !== 1 ? "s" : ""}
+                  {sprintIdTickets.length} ticket{sprintIdTickets.length !== 1 ? "s" : ""}
                 </Badge>
               </div>
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                {expandedCategories[status] ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                {expandedCategories[sprintId] ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </Button>
             </CardHeader>
-            {expandedCategories[status] && (
+            {expandedCategories[sprintId] && (
               <CardContent
                 className="flex-1 overflow-auto"
                 onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, status)}
+                onDrop={(e) => handleDrop(e, sprintId)}
               >
                 <div className="space-y-4">
-                  {statusTickets.map((ticket) => (
+                  {sprintIdTickets.map((ticket) => (
                     <div
                       key={ticket.id}
                       className="flex items-center rounded-md border p-2 shadow-sm cursor-pointer hover:border-primary transition-colors"
@@ -520,7 +530,7 @@ export default function TicketsPage() {
                       </div>
                     </div>
                   ))}
-                  {statusTickets.length === 0 && (
+                  {sprintIdTickets.length === 0 && (
                     <div className="flex items-center justify-center rounded-lg border border-dashed p-4 text-center">
                       <AlertCircle className="h-4 w-4 text-muted-foreground mr-2" />
                       <p className="text-sm text-muted-foreground">No tickets found</p>

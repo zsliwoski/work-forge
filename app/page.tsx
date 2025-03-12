@@ -20,7 +20,6 @@ import {
   Cell,
   Sector,
 } from "recharts"
-import { useTeam } from "@/contexts/team-context"
 import { useSession } from "next-auth/react"
 
 // Mock ticket data for dashboard
@@ -196,21 +195,21 @@ export default function Dashboard() {
     } else if (session.status === "unauthenticated") {
       router.push("/sign-in");
     } else {
-      if (selectedTeam && window.location.pathname === "/") {
-        router.push(`/${selectedTeam.id}`)
+      if (selectedTeam && window.location.pathname === "/dashboard") {
+        router.push(`/dashboard/${selectedTeam.id}`)
       }
     }
   }, [selectedTeam, router])
 
   const handleTicketClick = (ticket: any) => {
     if (selectedTeam) {
-      router.push(`/${selectedTeam.id}/tickets/${ticket.id}`)
+      router.push(`/dashboard/${selectedTeam.id}/tickets/${ticket.id}`)
     }
   }
 
   const handleWikiClick = (wikiPage: any) => {
     if (selectedTeam) {
-      router.push(`/${selectedTeam.id}/wiki?page=${wikiPage.slug}`)
+      router.push(`/dashboard/${selectedTeam.id}/wiki?page=${wikiPage.slug}`)
     }
   }
 

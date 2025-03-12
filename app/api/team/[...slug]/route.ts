@@ -81,3 +81,48 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ t
         return NextResponse.json({ error: 'Failed to delete team' }, { status: 500 });
     }
 }
+
+// POST /api/team/:orgId
+export async function POST(request: Request, { params }: { params: Promise<{ organizationId: string }> }) {
+
+    const { organizationId } = await params;
+
+    if (!organizationId) {
+        return NextResponse.json({ error: 'Organization ID is required' }, { status: 400 });
+    }
+
+    // Parse the request body and validate it against the team schema
+    const body = await request.json();
+    const validationResult = teamSchema.safeParse(body);
+
+    if (!validationResult.success) {
+        return NextResponse.json({ error: validationResult.error }, { status: 400 });
+    }
+
+    try {
+        const invitations = body.invitations;
+        delete body.invitations;
+
+        // Create a new team
+        const team = await prisma.team.create({
+            data: {
+                ...body, organizationId
+            }
+        });
+
+        if (invitations) {
+            await prisma.teamInvite.createMany({
+                data: invitations.map((email: string, role: number | null) => ({
+                    email,
+                    role,
+                    teamId: team.id,
+                }))
+            });
+        }
+
+        return NextResponse.json(team, { status: 200 });
+    } catch (error) {
+        console.error(error);
+        return NextResponse.json({ error: 'Failed to create team' }, { status: 500 });
+    }
+}

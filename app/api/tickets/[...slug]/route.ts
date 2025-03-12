@@ -21,8 +21,32 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
                 where: {
                     teamId: teamId,
                 },
+                select: {
+                    title: true,
+                    priority: true,
+                    createdAt: true,
+                    status: true,
+                    assignee: {
+                        select: {
+                            id: true,
+                            image: true,
+                            name: true,
+                        },
+                    },
+                    sprintId: true,
+                }
             });
-            return NextResponse.json(tickets, { status: 200 });
+
+            const team = await prisma.team.findFirst({
+                where: {
+                    id: teamId,
+                }, select: {
+                    currentSprintId: true,
+                    nextSprintId: true,
+                }
+            });
+
+            return NextResponse.json({ team, tickets }, { status: 200 });
         } catch (error) {
             return NextResponse.json({ error: 'Failed to fetch tickets' }, { status: 500 });
         }
@@ -92,7 +116,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
 
         const row = {
             ...body,
-            teamId: teamId,
+            teamId,
             status: 'OPEN',
             reporterId: "cm85696e60000vwbkm55ax25t", // Hardcoded for now
         };

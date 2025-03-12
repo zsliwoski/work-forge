@@ -4,8 +4,6 @@ import type React from "react"
 import { usePathname } from "next/navigation"
 import { Sidebar } from "@/components/sidebar"
 import { Toaster } from "@/components/ui/toaster"
-import { TeamProvider } from "@/contexts/team-context"
-import { TeamDebug } from "@/components/team-debug"
 
 export default function ClientLayout({
     children,
@@ -20,14 +18,13 @@ export default function ClientLayout({
         && !pathname.startsWith("/edit-organization");
 
     return (
-        <TeamProvider>
+        <div>
             <div className="flex h-screen overflow-hidden">
                 {showSidebar && <Sidebar />}
                 <main className="flex-1 overflow-auto bg-background">{children}</main>
             </div>
             <Toaster />
-            {/*<TeamDebug />*/}
-        </TeamProvider>
+        </div>
     )
 }
 

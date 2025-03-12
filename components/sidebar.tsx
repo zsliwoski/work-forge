@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { UserBadge } from "./user-badge"
 import { TeamSelector } from "./team-selector"
-import { useTeam } from "@/contexts/team-context"
 import { Separator } from "@/components/ui/separator"
 import { OrganizationBadge } from "@/components/organization-badge"
 
@@ -17,7 +16,7 @@ export function Sidebar() {
   const [expanded, setExpanded] = useState(true)
   const pathname = usePathname()
 
-  const { selectedTeam } = useTeam()
+  const selectedTeam = "team-1"
   const { selectedOrganization } = { selectedOrganization: { name: "acme-1", icon: "i" } }//useOrganization()
 
   const toggleSidebar = () => {
@@ -25,32 +24,32 @@ export function Sidebar() {
   }
 
   // Get the team ID from the URL or use the selected team
-  const teamId = selectedTeam?.id || ""
+  const teamId = selectedTeam || ""
 
   const navItems = [
     {
       name: "Dashboard",
-      href: `/${teamId}`,
+      href: `/dashboard/${teamId}`,
       icon: LayoutDashboard,
     },
     {
       name: "Sprint Board",
-      href: `/${teamId}/sprint-board`,
+      href: `/sprint-board/${teamId}`,
       icon: BarChart,
     },
     {
       name: "Tickets",
-      href: `/${teamId}/tickets`,
+      href: `/tickets/${teamId}`,
       icon: Ticket,
     },
     {
       name: "Wiki",
-      href: `/${teamId}/wiki`,
+      href: `/wiki/${teamId}`,
       icon: FileText,
     },
     {
       name: "Settings",
-      href: `/${teamId}/settings`,
+      href: `/settings/${teamId}`,
       icon: Settings,
     },
   ]
@@ -94,7 +93,7 @@ export function Sidebar() {
             {selectedOrganization?.icon}
           </div>
           <div className="h-8 w-8 flex items-center justify-center rounded-md bg-primary/10 text-primary">
-            {selectedTeam?.icon}
+            {selectedTeam}
           </div>
         </div>
       )}

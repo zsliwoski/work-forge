@@ -4,7 +4,17 @@ import { z } from 'zod';
 export const teamSchema = z.object({
     name: z.string().min(1, 'Name is required'),
     description: z.string().optional(),
-    ownerId: z.string().min(1, 'Owner ID is required'),
+    invitations: z.array(z.object({
+        email: z.string().min(1, 'Member ID is required'),
+        role: z.string().optional(),
+    })).optional().default([]),
+});
+
+// Define the schema for the organization object
+export const organizationSchema = z.object({
+    name: z.string().min(1, 'Name is required'),
+    description: z.string().optional(),
+    teams: z.array(teamSchema).optional().default([])
 });
 
 // Define the schema for the ticket object
@@ -30,7 +40,6 @@ export const sprintSchema = z.object({
 export const articleSchema = z.object({
     title: z.string().min(1, 'Title is required'),
     content: z.string().min(1, 'Content is required'),
-    authorId: z.string().min(1, 'Author ID is required'),
 });
 
 // Define the schema for the comment object

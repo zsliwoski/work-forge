@@ -20,7 +20,6 @@ import {
   Cell,
   Sector,
 } from "recharts"
-import { useTeam } from "@/contexts/team-context"
 
 // Mock ticket data for dashboard
 const mockRecentTickets = [
@@ -180,29 +179,29 @@ const renderActiveShape = (props: any) => {
   )
 }
 
-export default function Dashboard() {
+export default function Dashboard({ params }: { params: { teamId: string } }) {
   const router = useRouter()
-  const { selectedTeam } = useTeam()
+  const { teamId } = params;
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
 
   // Redirect to team-specific dashboard if we're at the root
-  useEffect(() => {
-    if (selectedTeam && window.location.pathname === "/") {
-      router.push(`/${selectedTeam.id}`)
+  /*useEffect(() => {
+    if (selectedTeam && window.location.pathname === "/dashboard") {
+      router.push(`/dashboard/${selectedTeam.id}`)
     }
-  }, [selectedTeam, router])
+  }, [selectedTeam, router])*/
 
   const handleTicketClick = (ticket: any) => {
-    if (selectedTeam) {
-      router.push(`/${selectedTeam.id}/tickets/${ticket.id}`)
+    if (teamId) {
+      router.push(`/tickets/${teamId}/${ticket.id}`)
     }
   }
 
   const handleWikiClick = (wikiPage: any) => {
-    if (selectedTeam) {
-      router.push(`/${selectedTeam.id}/wiki?page=${wikiPage.slug}`)
+    if (teamId) {
+      router.push(`/wiki/${teamId}/preview?page=${wikiPage.slug}`)
     }
   }
 
@@ -215,7 +214,7 @@ export default function Dashboard() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">
           Dashboard
-          {selectedTeam && <span className="ml-2 text-muted-foreground">({selectedTeam.name})</span>}
+          {teamId && <span className="ml-2 text-muted-foreground">({teamId})</span>}
         </h1>
       </div>
 
