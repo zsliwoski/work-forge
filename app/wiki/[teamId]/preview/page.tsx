@@ -14,6 +14,8 @@ import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import useSWR from "swr"
+import { fetcher } from "@/lib/db"
 
 // Wiki page validation schema
 const wikiPageSchema = z.object({
@@ -67,6 +69,12 @@ export default function WikiPage({ params }: { params: { teamId: string } }) {
   const [selectedPage, setSelectedPage] = useState(wikiPages[0])
   const [searchQuery, setSearchQuery] = useState("")
   const [isEditing, setIsEditing] = useState(false)
+
+  const { data, error, isLoading } = useSWR(`/api/wiki/${teamId}`, fetcher, { revalidateOnFocus: false });
+
+  if (data) {
+    console.log(data)
+  }
 
   // Form setup with Zod validation
   const form = useForm<WikiPageFormValues>({

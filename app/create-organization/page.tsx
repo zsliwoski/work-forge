@@ -128,7 +128,6 @@ export default function CreateOrganizationPage() {
     const onSubmit = async (data: FormValues) => {
         setIsSubmitting(true)
         try {
-            // In a real application, you would send this data to your API
             console.log("Form submitted:", data)
 
             // Simulate API call

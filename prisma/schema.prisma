@@ -56,10 +56,13 @@ model WikiPage {
   id        String   @id @default(cuid())
   title     String
   content   String
+  category  String   @default("General")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   author    User     @relation("AuthoredPages", fields: [authorId], references: [id])
   authorId  String
+  Team      Team     @relation(fields: [teamId], references: [id])
+  teamId    String
 }
 
 model Team {
@@ -77,6 +80,9 @@ model Team {
   organizationId  String
   TeamRoles       UserToTeam[] @relation("TeamRoles")
   TeamInvitations TeamInvite[] @relation("TeamInvitations")
+  Tags            Tag[]
+
+  WikiPage WikiPage[]
 }
 
 model Sprint {
@@ -118,6 +124,8 @@ model Tag {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   TagsOnTicket TagsOnTicket[]
+  Team         Team           @relation(fields: [teamId], references: [id])
+  teamId       String
 }
 
 model Comment {

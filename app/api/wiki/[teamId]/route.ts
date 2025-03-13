@@ -2,37 +2,54 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { articleSchema } from '@/lib/schema';
 
-// GET /api/wiki/:articleId
-export async function GET(request: Request, { params }: { params: Promise<{ articleId: string }> }) {
-    const { articleId } = await params;
+// GET /api/wiki/:teamId
+// GET /api/wiki/:teamId/:articleId
+export async function GET(request: Request, { params }: { params: Promise<{ teamId: string, articleId: string }> }) {
+    const { teamId, articleId } = await params;
 
-    if (!articleId) {
-        return NextResponse.json({ error: 'Article ID is required' }, { status: 400 });
+    if (!teamId) {
+        return NextResponse.json({ error: 'team ID is required' }, { status: 400 });
     }
-
-    try {
-        const article = await prisma.wikiPage.findFirst({
-            where: { id: articleId },
-            select: {
-                title: true,
-                content: true,
-                author: {
-                    select: {
-                        image: true,
-                        name: true,
-                    },
+    if (!articleId) {
+        try {
+            // Fetch all articles
+            const articles = await prisma.wikiPage.findMany({
+                where: { teamId },
+                select: {
+                    id: true,
+                    title: true,
                 }
-            },
-        });
-
-        if (!article) {
-            return NextResponse.json({ error: 'Article not found' }, { status: 404 });
+            });
+            return NextResponse.json(articles);
+        } catch (error) {
+            console.error(error);
+            return NextResponse.json({ error: 'Failed to fetch articles' }, { status: 500 });
         }
+    } else {
+        try {
+            const article = await prisma.wikiPage.findFirst({
+                where: { id: articleId },
+                select: {
+                    title: true,
+                    content: true,
+                    author: {
+                        select: {
+                            image: true,
+                            name: true,
+                        },
+                    }
+                },
+            });
 
-        return NextResponse.json(article);
-    } catch (error) {
-        console.error(error);
-        return NextResponse.json({ error: 'Failed to fetch article' }, { status: 500 });
+            if (!article) {
+                return NextResponse.json({ error: 'Article not found' }, { status: 404 });
+            }
+
+            return NextResponse.json(article);
+        } catch (error) {
+            console.error(error);
+            return NextResponse.json({ error: 'Failed to fetch article' }, { status: 500 });
+        }
     }
 }
 

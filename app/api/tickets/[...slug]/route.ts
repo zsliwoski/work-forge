@@ -63,6 +63,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
                     title: true,
                     description: true,
                     status: true,
+                    priority: true,
                     assignee: {
                         select: {
                             id: true,

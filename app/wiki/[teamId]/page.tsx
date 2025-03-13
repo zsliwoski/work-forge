@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { BookOpen, Clock, FileText, Plus, Search, Star, TrendingUp, Users } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { fetcher } from "@/lib/db"
+import useSWR from "swr"
 
 // Mock featured wiki pages
 const featuredPages = [
@@ -83,6 +85,8 @@ export default function WikiHomePage({ params }: { params: { teamId: string } })
   const teamId = params.teamId
   const { selectedTeam } = { selectedTeam: { id: params.teamId } }//useTeam()  
   const [searchQuery, setSearchQuery] = useState("")
+
+  const { data, error, isLoading } = useSWR(`/api/wiki/${teamId}/summary`, fetcher, { revalidateOnFocus: false });
 
   const navigateToWiki = (slug: string) => {
     if (selectedTeam) {

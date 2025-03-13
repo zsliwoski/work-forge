@@ -27,6 +27,7 @@ import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { ticketSchema } from "@/lib/schema"
+import { fetcher } from "@/lib/db"
 
 // Mock ticket data
 const mockTickets = [
@@ -127,9 +128,8 @@ const priorityColors = {
   High: "bg-red-500",
   Medium: "bg-yellow-500",
   Low: "bg-green-500",
+  NONE: "bg-gray-500",
 }
-
-const fetcher = (...args) => fetch(...args).then(res => res.json())
 
 export default function TicketsPage({ params }: { params: { teamId: string } }) {
   const { toast } = useToast()
@@ -144,7 +144,6 @@ export default function TicketsPage({ params }: { params: { teamId: string } }) 
     "Next Sprint": true,
     Backlog: true,
   })
-
 
   // Replace the newTicket state with form handling
   const form = useForm<TicketFormValues>({
@@ -165,7 +164,7 @@ export default function TicketsPage({ params }: { params: { teamId: string } }) 
     name: "Development Team",
   }
 
-  const { data, error, isLoading } = useSWR(`/api/tickets/${selectedTeam.id}`, fetcher, { revalidateOnFocus: true });
+  const { data, error, isLoading } = useSWR(`/api/tickets/${selectedTeam.id}`, fetcher);
   if (error) return <div>Failed to load</div>
   if (isLoading) return <div>Loading...</div>
   if (data) console.log(data)

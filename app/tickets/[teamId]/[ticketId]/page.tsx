@@ -12,6 +12,9 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { useToast } from "@/components/ui/use-toast"
 import { ArrowLeft, Clock, MessageSquare, Tag } from "lucide-react"
 import ReactMarkdown from "react-markdown"
+import useSWR from "swr"
+import { fetcher } from "@/lib/db"
+import { Spinner } from "@/components/ui/spinner"
 
 // Mock ticket data - in a real app, this would come from an API
 const mockTickets = [
@@ -44,18 +47,17 @@ export default function TicketPage({ params }: { params: { teamId: string; ticke
   const { toast } = useToast()
   const [ticket, setTicket] = useState<any>(null)
   const [newComment, setNewComment] = useState("")
-  const [isLoading, setIsLoading] = useState(true)
+  const [pageLoading, setpageLoading] = useState(true)
 
-  useEffect(() => {
-    // In a real app, this would be an API call
-    const foundTicket = mockTickets.find((t) => t.id === ticketId)
+  const { data, error, isLoading } = useSWR(`/api/tickets/${teamId}/${ticketId}`, fetcher, { revalidateOnFocus: false });
 
-    if (foundTicket) {
-      setTicket(foundTicket)
-    }
-
-    setIsLoading(false)
-  }, [ticketId])
+  if (isLoading) return <Spinner className="absolute top-1/2 left-1/2" />
+  if (error) return <div>Error loading ticket</div>
+  if (data && !ticket) {
+    console.log(data)
+    setTicket(data)
+    setpageLoading(false)
+  }
 
   const handleAddComment = () => {
     if (!newComment.trim()) return
@@ -87,7 +89,7 @@ export default function TicketPage({ params }: { params: { teamId: string; ticke
     }
   }
 
-  if (isLoading) {
+  if (pageLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
@@ -112,10 +114,13 @@ export default function TicketPage({ params }: { params: { teamId: string; ticke
   }
 
   const priorityColors = {
-    High: "text-red-500 bg-red-100 dark:bg-red-900/20",
-    Medium: "text-yellow-500 bg-yellow-100 dark:bg-yellow-900/20",
-    Low: "text-green-500 bg-green-100 dark:bg-green-900/20",
+    NONE: "text-black-500 bg-white-100 dark:bg-black-900/20 dark:text-white-500",
+    LOW: "text-green-500 bg-green-100 dark:bg-green-900/20",
+    MEDIUM: "text-yellow-500 bg-yellow-100 dark:bg-yellow-900/20",
+    HIGH: "text-red-500 bg-red-100 dark:bg-red-900/20",
   }
+
+  const priorityLabels = { NONE: "None", LOW: "Low", MEDIUM: "Medium", HIGH: "High" }
 
   return (
     <div className="container max-w-4xl py-8">
@@ -132,7 +137,7 @@ export default function TicketPage({ params }: { params: { teamId: string; ticke
           </div>
           <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
             <Clock className="h-4 w-4" />
-            <span>Created on {ticket.createdAt}</span>
+            <span>Created on {ticket.createdAt.split('T')[0]}</span>
           </div>
         </div>
       </div>
@@ -207,17 +212,17 @@ export default function TicketPage({ params }: { params: { teamId: string; ticke
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">Priority</span>
                 <Badge variant="outline" className={priorityColors[ticket.priority as keyof typeof priorityColors]}>
-                  {ticket.priority}
+                  {priorityLabels[ticket.priority as keyof typeof priorityLabels]}
                 </Badge>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">Assignee</span>
                 <div className="flex items-center gap-2">
                   <Avatar className="h-6 w-6">
-                    <AvatarImage src={ticket.assigneeAvatar} alt={ticket.assignee} />
-                    <AvatarFallback>{ticket.assigneeInitials}</AvatarFallback>
+                    <AvatarImage src={ticket.assignee?.image} alt={ticket.assignee?.name} />
+                    <AvatarFallback>{ticket.assignee?.name[0]}</AvatarFallback>
                   </Avatar>
-                  <span className="text-sm">{ticket.assignee}</span>
+                  <span className="text-sm">{ticket.assignee?.name}</span>
                 </div>
               </div>
             </CardContent>
@@ -229,12 +234,12 @@ export default function TicketPage({ params }: { params: { teamId: string; ticke
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
-                {ticket.tags.map((tag: string) => (
+                {ticket.tags?.map((tag: string) => (
                   <Badge key={tag} variant="secondary" className="text-xs">
                     {tag}
                   </Badge>
                 ))}
-                {ticket.tags.length === 0 && (
+                {ticket.tags?.length === 0 && (
                   <div className="text-center py-2 text-muted-foreground">
                     <Tag className="mx-auto h-4 w-4 mb-1" />
                     <p className="text-xs">No tags</p>
