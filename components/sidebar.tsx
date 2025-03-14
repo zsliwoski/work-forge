@@ -10,13 +10,16 @@ import { UserBadge } from "./user-badge"
 import { TeamSelector } from "./team-selector"
 import { Separator } from "@/components/ui/separator"
 import { OrganizationBadge } from "@/components/organization-badge"
+import { useUser } from "@/contexts/user-provider"
 
-export function Sidebar() {
+export function Sidebar({ setSelectedTeam: (id: string) => void}) {
+  const { user } = useUser()
+
 
   const [expanded, setExpanded] = useState(true)
   const pathname = usePathname()
 
-  const selectedTeam = { name: "team-1", id: "cm856cns70001vwloi0zmt9yh" }
+  const selectedTeam = { name: "team-1", id: user?.TeamRoles[0].Team.id, icon: "t" }
   const { selectedOrganization } = { selectedOrganization: { name: "acme-1", icon: "i" } }//useOrganization()
 
   const toggleSidebar = () => {
@@ -82,7 +85,7 @@ export function Sidebar() {
       {expanded && (
         <div className="px-3 mb-2 space-y-2">
           <OrganizationBadge />
-          <TeamSelector />
+          <TeamSelector teams={ } selectedTeam={selectedTeam} setSelectedTeam={setSelectedTeam} />
         </div>
       )}
 
@@ -103,7 +106,7 @@ export function Sidebar() {
       <nav className="flex-1 space-y-1 p-2">
         {navItems.map((item) => {
           // Check if the current path matches this nav item
-          const isActive = pathname === item.href || (pathname?.startsWith(item.href) && item.href !== `/${teamId}`)
+          const isActive = pathname === item.href || (pathname?.startsWith(item.href))
 
           return (
             <Link

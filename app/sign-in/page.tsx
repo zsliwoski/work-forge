@@ -50,7 +50,7 @@ export default function SignInPage() {
           variant: "destructive",
         })
       } else {
-        router.push("/dashboard")
+        router.push("/")
         setIsLoading(false)
         toast({
           title: "Signed in successfully",

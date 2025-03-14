@@ -4,7 +4,6 @@ WorkForge is a powerful ticketing and wiki system that leverages AI and Analytic
 
 ## Features
 
-- **AI-Powered Ticketing**: Automatically categorize and prioritize tickets using AI.
 - **Integrated Wiki**: Maintain comprehensive documentation and knowledge base.
 - **Analytics Dashboard**: Gain insights into team performance and ticket resolution times.
 - **Real-time Collaboration**: Collaborate with team members in real-time.
@@ -13,50 +12,34 @@ WorkForge is a powerful ticketing and wiki system that leverages AI and Analytic
 ## Technology Stack
 
 - **Frontend**: Next.js
-- **Backend**: Python
-- **Database**: [Your Database Here]
-- **AI/ML**: [Your AI/ML Tools Here]
+- **Database**: Postgres SQL
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js
-- Python
-- [Your Database Here]
+- Postgres SQL
 
 ### Installation
 
 1. Clone the repository:
     ```bash
-    git clone https://github.com/yourusername/work-forge.git
+    git clone https://github.com/zsliwoski/work-forge.git
     cd work-forge
     ```
 
 2. Install frontend dependencies:
     ```bash
-    cd frontend
+    cd work-forge
     npm install
-    ```
-
-3. Install backend dependencies:
-    ```bash
-    cd ../backend
-    pip install -r requirements.txt
     ```
 
 ### Running the Application
 
 1. Start the frontend:
     ```bash
-    cd frontend
     npm run dev
-    ```
-
-2. Start the backend:
-    ```bash
-    cd ../backend
-    python app.py
     ```
 
 3. Open your browser and navigate to `http://localhost:3000`.

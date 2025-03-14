@@ -6,6 +6,7 @@ import ClientLayout from "./client-layout"
 import SessionProvider from "@/contexts/session-provider"
 import { authOptions } from "./api/auth/[...nextauth]/route"
 import { getServerSession } from "next-auth"
+import { UserProvider } from "@/contexts/user-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -24,7 +25,9 @@ export default async function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <SessionProvider session={session}>
-          <ClientLayout>{children}</ClientLayout>
+          <UserProvider>
+            <ClientLayout>{children}</ClientLayout>
+          </UserProvider>
         </SessionProvider>
       </body>
     </html>

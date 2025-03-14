@@ -187,11 +187,11 @@ export default function Dashboard({ params }: { params: { teamId: string } }) {
   const [activeIndex, setActiveIndex] = useState(0)
 
   // Redirect to team-specific dashboard
-  /*useEffect(() => {
-    if (selectedTeam && window.location.pathname === "/dashboard") {
-      router.push(`/dashboard/${selectedTeam.id}`)
+  useEffect(() => {
+    if (teamId && window.location.pathname === "/dashboard") {
+      router.push(`/dashboard/${teamId}`)
     }
-  }, [selectedTeam, router])*/
+  }, [teamId, router])
 
   const handleTicketClick = (ticket: any) => {
     if (teamId) {

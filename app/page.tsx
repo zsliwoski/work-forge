@@ -1,25 +1,17 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useEffect } from "react"
-import { useSession } from "next-auth/react"
 import LandingPage from "./landing-page/landing-page"
+import { useUser } from "@/contexts/user-provider"
 
 export default function Home() {
-  const session = useSession()
+  const { user } = useUser()
   const router = useRouter()
-  const selectedTeam = "cm856cns70001vwloi0zmt9yh" // Find the users last selected team, if null, grab the first in their list //useTeam()
 
-  // Redirect to team-specific dashboard if we're at the root
-  useEffect(() => {
-    if (session?.status === "authenticated" && selectedTeam) {
-      router.push(`/dashboard/${selectedTeam}`)
-    }
-  }, [selectedTeam, router])
-
-  // TODO: styled redirect to signin
-  if (!session || session.status === "unauthenticated") {
+  if (!user) {
     return <LandingPage />
+  } else {
+    router.push(`/dashboard/${user.TeamRoles[0].Team.id}`)
   }
 
   return (
