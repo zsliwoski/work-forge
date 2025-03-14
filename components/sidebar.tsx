@@ -16,7 +16,7 @@ export function Sidebar() {
   const [expanded, setExpanded] = useState(true)
   const pathname = usePathname()
 
-  const selectedTeam = "team-1"
+  const selectedTeam = { name: "team-1", id: "cm856cns70001vwloi0zmt9yh" }
   const { selectedOrganization } = { selectedOrganization: { name: "acme-1", icon: "i" } }//useOrganization()
 
   const toggleSidebar = () => {
@@ -24,7 +24,7 @@ export function Sidebar() {
   }
 
   // Get the team ID from the URL or use the selected team
-  const teamId = selectedTeam || ""
+  const teamId = selectedTeam.id || ""
 
   const navItems = [
     {
@@ -93,7 +93,7 @@ export function Sidebar() {
             {selectedOrganization?.icon}
           </div>
           <div className="h-8 w-8 flex items-center justify-center rounded-md bg-primary/10 text-primary">
-            {selectedTeam}
+            {selectedTeam.name}
           </div>
         </div>
       )}

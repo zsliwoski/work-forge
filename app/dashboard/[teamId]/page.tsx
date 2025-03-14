@@ -186,7 +186,7 @@ export default function Dashboard({ params }: { params: { teamId: string } }) {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
 
-  // Redirect to team-specific dashboard if we're at the root
+  // Redirect to team-specific dashboard
   /*useEffect(() => {
     if (selectedTeam && window.location.pathname === "/dashboard") {
       router.push(`/dashboard/${selectedTeam.id}`)

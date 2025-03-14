@@ -55,8 +55,9 @@ model Organization {
 model WikiPage {
   id        String   @id @default(cuid())
   title     String
+  summary   String?
   content   String
-  category  String   @default("General")
+  category  Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   author    User     @relation("AuthoredPages", fields: [authorId], references: [id])

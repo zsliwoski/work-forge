@@ -87,9 +87,9 @@ export default function WikiPage({ params }: { params: { teamId: string } }) {
 
   // Handle URL parameters for selecting specific wiki pages
   useEffect(() => {
-    const pageSlug = searchParams.get("page")
-    if (pageSlug) {
-      const page = wikiPages.find((p) => p.slug === pageSlug)
+    const pageId = searchParams.get("page")
+    if (pageId) {
+      const page = wikiPages.find((p) => p.slug === pageId)
       if (page) {
         setSelectedPage(page)
         setIsEditing(false)
@@ -134,7 +134,7 @@ export default function WikiPage({ params }: { params: { teamId: string } }) {
     if (!selectedTeam) {
       return
     }
-    fetch("/api/wiki/" + "cm856cns70001vwloi0zmt9yh", {
+    fetch(`/api/wiki/${teamId}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

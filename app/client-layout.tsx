@@ -11,7 +11,7 @@ export default function ClientLayout({
     children: React.ReactNode
 }>) {
     const pathname = usePathname()
-    const showSidebar = pathname !== "/landing-page"
+    const showSidebar = pathname !== "/"
         && pathname !== "/sign-in"
         && pathname !== "/create-organization"
         && pathname !== "/organizations"

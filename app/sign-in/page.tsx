@@ -28,8 +28,7 @@ export default function SignInPage() {
     setTimeout(() => {
       setIsLoading(false)
 
-      // For demo purposes, navigate to dashboard
-      router.push("/")
+      router.push("/dashboard")
 
       toast({
         title: "Signed in successfully",
@@ -37,34 +36,11 @@ export default function SignInPage() {
       })
     }, 1000)
 
-    /* 
-    // Actual Next-Auth implementation would look like this:
-    signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    }).then((result) => {
-      if (result?.error) {
-        toast({
-          title: "Error signing in",
-          description: result.error,
-          variant: "destructive",
-        })
-      } else {
-        router.push("/")
-        toast({
-          title: "Signed in successfully",
-          description: "Welcome back to WorkForge!",
-        })
-      }
-    })
-    */
   }
 
   const handleSocialSignIn = (provider: string) => {
     setIsLoading(true)
 
-    // Simulate loading
     signIn(provider, { callbackUrl: "/" }).then((result) => {
       // For demo purposes, navigate to dashboard
       if (result?.error) {
@@ -74,7 +50,7 @@ export default function SignInPage() {
           variant: "destructive",
         })
       } else {
-        router.push("/")
+        router.push("/dashboard")
         setIsLoading(false)
         toast({
           title: "Signed in successfully",
