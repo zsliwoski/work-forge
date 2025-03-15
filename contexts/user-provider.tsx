@@ -3,7 +3,6 @@ import React, { createContext, useContext, ReactNode } from 'react';
 import useSWR from 'swr';
 import { useSession } from 'next-auth/react';
 import { fetcher } from '@/lib/db';
-import { Session } from 'next-auth';
 
 interface User {
     name: string;
@@ -14,9 +13,11 @@ interface User {
         Team: {
             id: string;
             name: string;
+            icon: string | null | undefined;
             Organization: {
                 id: string;
                 name: string;
+                icon: string | null | undefined;
             };
         };
     }[];
@@ -29,6 +30,7 @@ interface UserContextProps {
 }
 
 const UserContext = createContext<UserContextProps | undefined>(undefined);
+
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
     const { data: session } = useSession();

@@ -29,10 +29,12 @@ export async function GET(req: NextRequest) {
                             select: {
                                 id: true,
                                 name: true,
+                                icon: true,
                                 Organization: {
                                     select: {
                                         id: true,
-                                        name: true
+                                        name: true,
+                                        icon: true
                                     }
                                 }
                             }

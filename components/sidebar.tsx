@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator"
 import { OrganizationBadge } from "@/components/organization-badge"
 import { useUser } from "@/contexts/user-provider"
 
-export function Sidebar({ setSelectedTeam: (id: string) => void}) {
+export function Sidebar() {
   const { user } = useUser()
 
 
@@ -66,7 +66,7 @@ export function Sidebar({ setSelectedTeam: (id: string) => void}) {
     >
       <div className="flex items-center justify-between p-4">
         {expanded && (
-          <Link href={`/${teamId}`} className="flex items-center gap-2 font-bold text-xl">
+          <Link href={`/`} className="flex items-center gap-2 font-bold text-xl">
             <Home className="h-5 w-5" />
             <span>WorkForge</span>
           </Link>
@@ -85,7 +85,7 @@ export function Sidebar({ setSelectedTeam: (id: string) => void}) {
       {expanded && (
         <div className="px-3 mb-2 space-y-2">
           <OrganizationBadge />
-          <TeamSelector teams={ } selectedTeam={selectedTeam} setSelectedTeam={setSelectedTeam} />
+          <TeamSelector />
         </div>
       )}
 

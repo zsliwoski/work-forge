@@ -2,13 +2,17 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-//import { useOrganization } from "@/contexts/organization-context"
 import { Button } from "@/components/ui/button"
 import { ChevronDown, Settings } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { useTeam } from "@/contexts/team-provider"
+import { useUser } from "@/contexts/user-provider"
+import { Organization } from "@/types/selector"
 
 export function OrganizationBadge() {
-    const { selectedOrganization } = { selectedOrganization: { name: "acme-1", icon: "i" } }//useOrganization()
+    const { user } = useUser()
+    const { teamId } = useTeam()
+    const selectedOrganization = user?.TeamRoles.find((role) => role.Team.id == teamId)?.Team.Organization as Organization
     const [open, setOpen] = useState(false)
     const router = useRouter()
 

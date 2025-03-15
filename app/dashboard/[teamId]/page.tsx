@@ -20,6 +20,7 @@ import {
   Cell,
   Sector,
 } from "recharts"
+import { useUser } from "@/contexts/user-provider"
 
 // Mock ticket data for dashboard
 const mockRecentTickets = [
@@ -186,6 +187,10 @@ export default function Dashboard({ params }: { params: { teamId: string } }) {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
 
+  const { user } = useUser()
+  const teams = user?.TeamRoles.map((role) => role.Team) || []
+  const selectedTeam = teams.find((team) => team.id === teamId)
+
   // Redirect to team-specific dashboard
   useEffect(() => {
     if (teamId && window.location.pathname === "/dashboard") {
@@ -213,8 +218,8 @@ export default function Dashboard({ params }: { params: { teamId: string } }) {
     <div className="flex flex-col gap-6 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">
-          Dashboard
-          {teamId && <span className="ml-2 text-muted-foreground">({teamId})</span>}
+          Dashboard -
+          {selectedTeam && <span className="ml-2 text-muted-foreground">{selectedTeam.icon} {selectedTeam.name}</span>}
         </h1>
       </div>
 
