@@ -11,23 +11,27 @@ import { TeamSelector } from "./team-selector"
 import { Separator } from "@/components/ui/separator"
 import { OrganizationBadge } from "@/components/organization-badge"
 import { useUser } from "@/contexts/user-provider"
+import { useTeam } from "@/contexts/team-provider"
+import { Organization } from "@/types/selector"
 
 export function Sidebar() {
   const { user } = useUser()
+  const { teamId } = useTeam()
 
+  const roles = user?.TeamRoles
+  const teams = roles?.map((role) => role.Team) || []
+  const selectedTeam = teams.find((team) => team.id === teamId)
+  const selectedOrganization = selectedTeam?.Organization as Organization
 
   const [expanded, setExpanded] = useState(true)
   const pathname = usePathname()
-
-  const selectedTeam = { name: "team-1", id: user?.TeamRoles[0].Team.id, icon: "t" }
-  const { selectedOrganization } = { selectedOrganization: { name: "acme-1", icon: "i" } }//useOrganization()
 
   const toggleSidebar = () => {
     setExpanded(!expanded)
   }
 
   // Get the team ID from the URL or use the selected team
-  const teamId = selectedTeam.id || ""
+  //const teamId = selectedTeam.id || ""
 
   const navItems = [
     {
@@ -91,12 +95,12 @@ export function Sidebar() {
 
 
       {!expanded && (
-        <div className="flex justify-center my-2">
-          <div className="h-8 w-8 flex items-center justify-center rounded-md bg-primary/10 text-primary">
+        <div className="flex flex-col content-center justify-center my-2 width-full">
+          <div className="m-2 h-8 w-8 flex self-center items-center justify-center rounded-md bg-primary/10 text-primary">
             {selectedOrganization?.icon}
           </div>
-          <div className="h-8 w-8 flex items-center justify-center rounded-md bg-primary/10 text-primary">
-            {selectedTeam.name}
+          <div className="m-2 h-8 w-8 flex self-center items-center justify-center rounded-md bg-primary/10 text-primary">
+            {selectedTeam?.icon}
           </div>
         </div>
       )}

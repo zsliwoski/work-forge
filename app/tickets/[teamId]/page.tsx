@@ -134,10 +134,11 @@ const priorityColors = {
 export default function TicketsPage({ params }: { params: { teamId: string } }) {
   const { toast } = useToast()
   const { teamId } = params
-  const [tickets, setTickets] = useState(mockTickets)
+
+  //const [tickets, setTickets] = useState(mockTickets)
+  const [selectedTicket, setSelectedTicket] = useState<(typeof tickets)[0] | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [newTag, setNewTag] = useState("")
-  const [selectedTicket, setSelectedTicket] = useState<(typeof tickets)[0] | null>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
     "Current Sprint": true,
@@ -158,26 +159,25 @@ export default function TicketsPage({ params }: { params: { teamId: string } }) 
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
-  // Mock selectedTeam data
-  const selectedTeam = {
-    id: "cm856cns70001vwloi0zmt9yh",
-    name: "Development Team",
-  }
-
-  const { data, error, isLoading } = useSWR(`/api/tickets/${selectedTeam.id}`, fetcher);
+  const { data, error, isLoading } = useSWR(`/api/tickets/${teamId}`, fetcher, { revalidateOnFocus: false });
   if (error) return <div>Failed to load</div>
   if (isLoading) return <div>Loading...</div>
   if (data) console.log(data)
+  const currentSprint = data.team.currentSprintId
+  const nextSprint = data.team.nextSprintId
+  const tickets = data.tickets
+
   const filteredTickets = tickets.filter(
     (ticket) =>
       ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       ticket.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       ticket.id.toLowerCase().includes(searchQuery.toLowerCase()),
   )
+  console.log(filteredTickets)
 
   const handleCreateTicket = (values: TicketFormValues) => {
 
-    fetch("/api/tickets/" + selectedTeam.id, {
+    fetch(`/api/tickets/${teamId}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -194,7 +194,7 @@ export default function TicketsPage({ params }: { params: { teamId: string } }) 
         const id = data.id
         const createdAt = new Date().toISOString().split("T")[0]
 
-        setTickets([
+        /*setTickets([
           ...tickets,
           {
             ...values,
@@ -202,7 +202,7 @@ export default function TicketsPage({ params }: { params: { teamId: string } }) 
             createdAt,
             tags: values.tags || [],
           },
-        ])
+        ])*/
 
         form.reset({
           title: "",
@@ -244,7 +244,7 @@ export default function TicketsPage({ params }: { params: { teamId: string } }) 
   }
 
   const handleTicketClick = (ticket: (typeof tickets)[0]) => {
-    if (selectedTeam) {
+    if (teamId && ticket.id) {
       // For direct navigation, uncomment this:
       // router.push(`/${selectedTeam.id}/tickets/${ticket.id}`)
 
@@ -258,7 +258,7 @@ export default function TicketsPage({ params }: { params: { teamId: string } }) 
     // Update the ticket in the tickets array
     const updatedTickets = tickets.map((ticket) => (ticket.id === updatedTicket.id ? updatedTicket : ticket))
 
-    setTickets(updatedTickets)
+    //setTickets(updatedTickets)
   }
 
   const handleDragStart = (e: React.DragEvent, ticketId: string) => {
@@ -296,9 +296,9 @@ export default function TicketsPage({ params }: { params: { teamId: string } }) 
   }
 
   const ticketsBySprintId = {
-    "Current Sprint": filteredTickets.filter((ticket) => ticket.sprintId === "Current Sprint"),
-    "Next Sprint": filteredTickets.filter((ticket) => ticket.sprintId === "Next Sprint"),
-    Backlog: filteredTickets.filter((ticket) => ticket.sprintId === "Backlog"),
+    "Current Sprint": currentSprint ? filteredTickets.filter((ticket) => ticket.sprintId === currentSprint) : [],
+    "Next Sprint": nextSprint ? filteredTickets.filter((ticket) => ticket.sprintId === nextSprint) : [],
+    Backlog: filteredTickets.filter((ticket) => ticket.sprintId === null),
   }
 
   return (
@@ -521,12 +521,12 @@ export default function TicketsPage({ params }: { params: { teamId: string } }) 
                       </div>
 
                       {/* User avatar */}
-                      <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
+                      {/*<div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
                         {ticket.assignee
                           .split(" ")
                           .map((name) => name[0])
                           .join("")}
-                      </div>
+                      </div>*/}
                     </div>
                   ))}
                   {sprintIdTickets.length === 0 && (

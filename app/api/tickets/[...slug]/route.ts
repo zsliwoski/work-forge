@@ -16,13 +16,40 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
     // If ticketId is not provided, return all tickets for the team
     if (!ticketId) {
         try {
+            const team = await prisma.team.findFirst({
+                where: {
+                    id: teamId,
+                }, select: {
+                    currentSprintId: true,
+                    nextSprintId: true,
+                    TeamRoles: {
+                        select: {
+                            User: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    image: true,
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            if (!team) {
+                return NextResponse.json({ error: 'Team not found' }, { status: 404 });
+            }
+
             // Fetch all tickets for the team
             const tickets = await prisma.ticket.findMany({
                 where: {
                     teamId: teamId,
+                    OR: [{ sprintId: team.currentSprintId }, { sprintId: team.nextSprintId }, { sprintId: null }],
                 },
                 select: {
+                    id: true,
                     title: true,
+                    description: true,
                     priority: true,
                     createdAt: true,
                     status: true,
@@ -34,17 +61,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
                         },
                     },
                     sprintId: true,
+                    Sprint: {
+                        select: {
+                            id: true,
+                            title: true,
+                        }
+                    }
                 }
             });
 
-            const team = await prisma.team.findFirst({
-                where: {
-                    id: teamId,
-                }, select: {
-                    currentSprintId: true,
-                    nextSprintId: true,
-                }
-            });
+
 
             return NextResponse.json({ team, tickets }, { status: 200 });
         } catch (error) {

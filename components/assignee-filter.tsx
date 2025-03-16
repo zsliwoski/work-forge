@@ -5,21 +5,22 @@ import { cn } from "@/lib/utils"
 import { AssigneeBadge } from "./assignee-badge"
 
 interface Assignee {
+  id: string
   name: string
-  avatar?: string
+  image?: string
   initials: string
 }
 
 interface AssigneeFilterProps {
   assignees: Assignee[]
-  selectedAssignee: string | null
-  onSelectAssignee: (assignee: string | null) => void
+  selectedAssignee: any | null
+  onSelectAssignee: (assignee: Assignee | null) => void
 }
 
 export function AssigneeFilter({ assignees, selectedAssignee, onSelectAssignee }: AssigneeFilterProps) {
   if (!assignees.length) return null
 
-  const selectedAssigneeData = selectedAssignee ? assignees.find((a) => a.name === selectedAssignee) : null
+  const selectedAssigneeData = selectedAssignee ? assignees.find((a) => a.id === selectedAssignee?.id) : null
 
   return (
     <div className="flex flex-wrap items-center gap-2 mb-6">
@@ -27,15 +28,15 @@ export function AssigneeFilter({ assignees, selectedAssignee, onSelectAssignee }
       <div className="flex flex-wrap items-center gap-2">
         {assignees.map((assignee) => (
           <Avatar
-            key={assignee.name}
+            key={assignee.id}
             className={cn(
               "h-10 w-10 cursor-pointer transition-all hover:ring-2 hover:ring-primary/50",
-              selectedAssignee === assignee.name && "ring-2 ring-primary",
+              selectedAssignee?.id === assignee?.id && "ring-2 ring-primary",
             )}
-            onClick={() => onSelectAssignee(selectedAssignee === assignee.name ? null : assignee.name)}
+            onClick={() => onSelectAssignee(selectedAssignee === assignee.id ? null : assignee)}
             title={assignee.name}
           >
-            <AvatarImage src={assignee.avatar} alt={assignee.name} />
+            <AvatarImage src={assignee.image} alt={assignee.name} />
             <AvatarFallback>{assignee.initials}</AvatarFallback>
           </Avatar>
         ))}
@@ -44,7 +45,7 @@ export function AssigneeFilter({ assignees, selectedAssignee, onSelectAssignee }
           <div className="ml-2 flex items-center">
             <AssigneeBadge
               name={selectedAssigneeData.name}
-              avatar={selectedAssigneeData.avatar}
+              avatar={selectedAssigneeData.image}
               initials={selectedAssigneeData.initials}
               onClear={() => onSelectAssignee(null)}
             />

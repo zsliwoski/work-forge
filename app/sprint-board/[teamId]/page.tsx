@@ -19,6 +19,8 @@ import { AlertCircle, CheckCircle } from "lucide-react"
 import { TicketPreviewDialog } from "@/components/ticket-preview-dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AssigneeFilter } from "@/components/assignee-filter"
+import useSWR from "swr"
+import { fetcher } from "@/lib/db"
 
 // Mock ticket data
 const mockTickets = [
@@ -153,18 +155,22 @@ const mockTickets = [
 ]
 
 const priorityColors = {
-  High: "bg-red-500",
-  Medium: "bg-yellow-500",
-  Low: "bg-green-500",
+  HIGH: "bg-red-500",
+  MEDIUM: "bg-yellow-500",
+  LOW: "bg-green-500",
 }
 
-export default function SprintBoardPage() {
+export default function SprintBoardPage({ params }: { params: { teamId: string } }) {
   const { toast } = useToast()
-  const [tickets, setTickets] = useState(mockTickets)
+  const { teamId } = params
+  const [tickets, setTickets] = useState([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedTicket, setSelectedTicket] = useState<(typeof tickets)[0] | null>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
-  const [selectedAssignee, setSelectedAssignee] = useState<string | null>(null)
+  const [selectedAssignee, setSelectedAssignee] = useState<any | null>(null)
+
+  const { data, error, isLoading } = useSWR(`/api/sprint/${teamId}`, fetcher, { revalidateOnFocus: false });
+
 
   // Extract unique assignees from tickets
   const assignees = useMemo(() => {
@@ -173,9 +179,10 @@ export default function SprintBoardPage() {
     tickets.forEach((ticket) => {
       if (!uniqueAssignees.has(ticket.assignee)) {
         uniqueAssignees.set(ticket.assignee, {
-          name: ticket.assignee,
-          avatar: ticket.assigneeAvatar,
-          initials: ticket.assigneeInitials,
+          id: ticket.assignee?.id,
+          name: ticket.assignee?.name ? ticket.assignee?.name : "Unassigned",
+          image: ticket.assignee?.image,
+          initials: ticket.assignee?.name[0],
         })
       }
     })
@@ -186,8 +193,18 @@ export default function SprintBoardPage() {
   // Filter tickets based on selected assignee
   const filteredTickets = useMemo(() => {
     if (!selectedAssignee) return tickets
-    return tickets.filter((ticket) => ticket.assignee === selectedAssignee)
+    return tickets.filter((ticket) => ticket.assignee?.id === selectedAssignee?.id)
   }, [tickets, selectedAssignee])
+
+  if (error) return <div>Failed to load</div>
+  if (isLoading) return <div>Loading...</div>
+  if (data) {
+    const sprint = data?.sprint || {};
+    const sprintTickets = sprint?.tickets ? sprint.tickets : [];
+    if (tickets.length === 0)
+      setTickets(sprintTickets)
+  }
+
 
   const handleCompleteSprint = () => {
     // Move all "Done" tickets to a completed state or archive
@@ -240,31 +257,31 @@ export default function SprintBoardPage() {
     setTickets(updatedTickets)
   }
 
-  const handleSelectAssignee = (assignee: string | null) => {
+  const handleSelectAssignee = (assignee: any | null) => {
     setSelectedAssignee(assignee)
 
     if (assignee) {
       toast({
         title: "Filter applied",
-        description: `Showing tickets assigned to ${assignee}`,
+        description: `Showing tickets assigned to ${assignee.name}`,
       })
     }
   }
 
   const ticketsByStatus = {
-    Todo: filteredTickets.filter((ticket) => ticket.status === "Todo"),
-    "In Progress": filteredTickets.filter((ticket) => ticket.status === "In Progress"),
-    Blocked: filteredTickets.filter((ticket) => ticket.status === "Blocked"),
-    Done: filteredTickets.filter((ticket) => ticket.status === "Done"),
+    OPEN: filteredTickets.filter((ticket) => ticket.status === "OPEN"),
+    "IN PROGRESS": filteredTickets.filter((ticket) => ticket.status === "IN PROGRESS"),
+    BLOCKED: filteredTickets.filter((ticket) => ticket.status === "BLOCKED"),
+    CLOSED: filteredTickets.filter((ticket) => ticket.status === "CLOSED"),
   }
 
   // Calculate ticket counts for the status header
   const totalTickets = filteredTickets.length
   const ticketCounts = {
-    Todo: ticketsByStatus.Todo.length,
-    "In Progress": ticketsByStatus["In Progress"].length,
-    Blocked: ticketsByStatus.Blocked.length,
-    Done: ticketsByStatus.Done.length,
+    OPEN: ticketsByStatus.OPEN.length,
+    "IN PROGRESS": ticketsByStatus["IN PROGRESS"].length,
+    BLOCKED: ticketsByStatus.BLOCKED.length,
+    CLOSED: ticketsByStatus.CLOSED.length,
   }
 
   return (
@@ -305,7 +322,7 @@ export default function SprintBoardPage() {
       {selectedAssignee && (
         <div className="flex items-center gap-2 mb-2">
           <span className="text-sm font-medium">
-            Showing {totalTickets} ticket{totalTickets !== 1 ? "s" : ""} assigned to {selectedAssignee}
+            Showing {totalTickets} ticket{totalTickets !== 1 ? "s" : ""} assigned to {selectedAssignee.name}
           </span>
         </div>
       )}
@@ -350,8 +367,8 @@ export default function SprintBoardPage() {
 
                     {/* Assignee avatar */}
                     <Avatar className="h-8 w-8 ml-2">
-                      <AvatarImage src={ticket.assigneeAvatar} alt={ticket.assignee} />
-                      <AvatarFallback>{ticket.assigneeInitials}</AvatarFallback>
+                      <AvatarImage src={ticket.assignee?.image} alt={ticket.assignee?.name} />
+                      <AvatarFallback>{ticket.assignee?.initials}</AvatarFallback>
                     </Avatar>
                   </div>
                 ))}

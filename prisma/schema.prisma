@@ -70,14 +70,16 @@ model WikiPage {
 }
 
 model Team {
-  id              String   @id @default(cuid())
-  name            String
-  icon            String?
-  description     String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  sprints         Sprint[] @relation("TeamSprints")
-  tickets         Ticket[] @relation("TeamTickets")
+  id           String   @id @default(cuid())
+  name         String
+  ticketPrefix String   @default("TICKET")
+  icon         String?
+  description  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  sprints      Sprint[] @relation("TeamSprints")
+  tickets      Ticket[] @relation("TeamTickets")
+
   currentSprintId String?
   nextSprintId    String?
 

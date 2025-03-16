@@ -16,19 +16,65 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
 
         // If sprintId is not provided, return the active sprint for the team
         if (!sprintId) {
-            const currentSprint = await prisma.team.findFirst({
+            const team = await prisma.team.findFirst({
                 where: {
                     id: teamId,
                 },
                 select: {
-                    sprints: true,
+                    currentSprintId: true,
+                    nextSprintId: true,
                 }
             });
 
-            if (!currentSprint) {
-                return NextResponse.json({ message: 'No active sprint found for this team' }, { status: 404 });
+            if (!team) {
+                return NextResponse.json({ message: 'Team not found' }, { status: 404 });
             }
-            return NextResponse.json(currentSprint, { status: 200 });
+            if (team.currentSprintId) {
+                const sprint = await prisma.sprint.findFirst({
+                    where: {
+                        teamId: teamId,
+                        id: team.currentSprintId,
+                    }, select: {
+                        id: true,
+                        description: true,
+                        title: true,
+                        tickets: {
+                            select: {
+                                id: true,
+                                title: true,
+                                description: true,
+                                status: true,
+                                assignee: true,
+                                priority: true,
+                            },
+                        },
+                    }
+                });
+                return NextResponse.json({ isCurrent: true, sprint }, { status: 200 });
+            } else if (team.nextSprintId) {
+                const sprint = await prisma.sprint.findFirst({
+                    where: {
+                        teamId: teamId,
+                        id: team.nextSprintId,
+                    }, select: {
+                        id: true,
+                        description: true,
+                        title: true,
+                        tickets: {
+                            select: {
+                                id: true,
+                                title: true,
+                                description: true,
+                                status: true,
+                                assignee: { select: { name: true, email: true, id: true } },
+                                priority: true,
+                            },
+                        },
+                    }
+                });
+                return NextResponse.json({ isCurrent: false, sprint }, { status: 200 });
+            }
+            return NextResponse.json({ message: 'No sprints found' }, { status: 404 });
         } else {
             // If sprintId is provided, return the specific sprint
             const sprint = await prisma.team.findFirst({

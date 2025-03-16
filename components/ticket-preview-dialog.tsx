@@ -14,6 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
+import { useTeam } from "@/contexts/team-provider"
 
 interface TicketComment {
   id: string
@@ -21,14 +22,18 @@ interface TicketComment {
   content: string
   createdAt: string
 }
-
+interface User {
+  id: string
+  name: string
+  image: string
+}
 interface Ticket {
   id: string
   title: string
   description: string
   status: string
   priority: string
-  assignee: string
+  assignee: User | null
   tags: string[]
   createdAt?: string
   comments?: TicketComment[]
@@ -45,7 +50,7 @@ interface TicketPreviewDialogProps {
 export function TicketPreviewDialog({ ticket, open, onOpenChange, onEdit, onSave }: TicketPreviewDialogProps) {
   const { toast } = useToast()
   const router = useRouter()
-  const { selectedTeam } = { selectedTeam: "team-1" }//useTeam()
+  const { teamId } = useTeam()
   const [newComment, setNewComment] = useState("")
   const [isEditing, setIsEditing] = useState(false)
   const [editedTicket, setEditedTicket] = useState<Ticket | null>(null)
@@ -67,8 +72,8 @@ export function TicketPreviewDialog({ ticket, open, onOpenChange, onEdit, onSave
   }
 
   const statusOptions = ["Todo", "In Progress", "Blocked", "Done", "Current Sprint", "Next Sprint", "Backlog"]
-  const priorityOptions = ["High", "Medium", "Low"]
-  const assigneeOptions = ["John Doe", "Jane Smith"]
+  const priorityOptions = ["High", "Medium", "Low", "None"]
+  const assigneeOptions = [{ name: "John Doe", id: "1" }, { name: "Joe Dohn", id: "2" }]
 
   const handleAddComment = () => {
     if (!newComment.trim()) return
@@ -126,8 +131,8 @@ export function TicketPreviewDialog({ ticket, open, onOpenChange, onEdit, onSave
   }
 
   const handleViewFullPage = () => {
-    if (selectedTeam && ticket) {
-      router.push(`/tickets/${selectedTeam}/${ticket.id}`)
+    if (teamId && ticket) {
+      router.push(`/tickets/${teamId}/${ticket.id}`)
       onOpenChange(false)
     }
   }
@@ -158,7 +163,7 @@ export function TicketPreviewDialog({ ticket, open, onOpenChange, onEdit, onSave
             <Badge variant="outline">{editedTicket.id}</Badge>
           </div>
           <div className="flex flex-wrap gap-2 mt-2">
-            {isEditing ? (
+            {/*isEditing ? (
               <div className="w-full space-y-2">
                 <div className="flex gap-2">
                   <Input
@@ -192,7 +197,7 @@ export function TicketPreviewDialog({ ticket, open, onOpenChange, onEdit, onSave
                   {tag}
                 </Badge>
               ))
-            )}
+            )*/}
           </div>
         </DialogHeader>
 
@@ -243,7 +248,7 @@ export function TicketPreviewDialog({ ticket, open, onOpenChange, onEdit, onSave
                   <div className="space-y-2">
                     <Label htmlFor="assignee">Assignee</Label>
                     <Select
-                      value={editedTicket.assignee}
+                      value={editedTicket.assignee?.name}
                       onValueChange={(value) => setEditedTicket({ ...editedTicket, assignee: value })}
                     >
                       <SelectTrigger id="assignee">
@@ -251,8 +256,8 @@ export function TicketPreviewDialog({ ticket, open, onOpenChange, onEdit, onSave
                       </SelectTrigger>
                       <SelectContent>
                         {assigneeOptions.map((assignee) => (
-                          <SelectItem key={assignee} value={assignee}>
-                            {assignee}
+                          <SelectItem key={assignee.id} value={assignee.id}>
+                            {assignee.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -263,7 +268,7 @@ export function TicketPreviewDialog({ ticket, open, onOpenChange, onEdit, onSave
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4" />
-                    <span>Assignee: {editedTicket.assignee}</span>
+                    <span>Assignee: {editedTicket.assignee?.name}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge
@@ -370,8 +375,8 @@ export function TicketPreviewDialog({ ticket, open, onOpenChange, onEdit, onSave
             </div>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+      </DialogContent >
+    </Dialog >
   )
 }
 

@@ -22,8 +22,10 @@ export default function ClientLayout({
     return (
         <div>
             <div className="flex h-screen overflow-hidden">
-                {showSidebar && <TeamProvider><Sidebar /></TeamProvider>}
-                <main className="flex-1 overflow-auto bg-background">{children}</main>
+                <TeamProvider>
+                    {showSidebar && <Sidebar />}
+                    <main className="flex-1 overflow-auto bg-background">{children}</main>
+                </TeamProvider>
             </div>
             <Toaster />
         </div>

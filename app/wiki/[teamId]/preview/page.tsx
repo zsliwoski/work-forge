@@ -72,9 +72,7 @@ export default function WikiPage({ params }: { params: { teamId: string } }) {
 
   const { data, error, isLoading } = useSWR(`/api/wiki/${teamId}`, fetcher, { revalidateOnFocus: false });
 
-  if (data) {
-    console.log(data)
-  }
+
 
   // Form setup with Zod validation
   const form = useForm<WikiPageFormValues>({
@@ -193,6 +191,12 @@ export default function WikiPage({ params }: { params: { teamId: string } }) {
       content: newPage.content,
     })
     setIsEditing(true)
+  }
+
+  if (isLoading) return <div>Loading...</div>
+  if (error) return <div>Error loading wiki pages</div>
+  if (data) {
+    console.log(data)
   }
 
   return (
