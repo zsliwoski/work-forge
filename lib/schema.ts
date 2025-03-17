@@ -37,7 +37,7 @@ export const sprintSchema = z.object({
 });
 
 // Define the schema for the article object
-export const articleSchema = z.object({
+export const pageSchema = z.object({
     title: z.string().min(1, 'Title is required'),
     content: z.string().min(1, 'Content is required'),
 });

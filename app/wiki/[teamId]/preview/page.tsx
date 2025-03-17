@@ -28,58 +28,37 @@ const wikiPageSchema = z.object({
 
 type WikiPageFormValues = z.infer<typeof wikiPageSchema>
 
-// Mock wiki data
-const mockWikiPages = [
-  {
-    id: 1,
-    slug: "getting-started",
-    title: "Getting Started",
-    content:
-      "# Getting Started\n\nWelcome to WorkForge! This guide will help you get started with our platform.\n\n## First Steps\n\n1. Create your account\n2. Set up your profile\n3. Join a team\n\n## Key Features\n\n- **Ticketing System**: Track and manage tasks\n- **Wiki**: Document your processes\n- **Sprint Board**: Visualize your workflow\n\n```js\n// Example code\nconst greeting = 'Hello, WorkForge!';\nconsole.log(greeting);\n```",
-    createdAt: "2023-05-15",
-    updatedAt: "2023-06-20",
-  },
-  {
-    id: 2,
-    slug: "api-documentation",
-    title: "API Documentation",
-    content:
-      '# API Documentation\n\nThis document outlines the API endpoints available in WorkForge.\n\n## Authentication\n\nAll API requests require authentication using a JWT token.\n\n```\nAuthorization: Bearer <your_token>\n```\n\n## Endpoints\n\n### GET /api/tickets\n\nReturns a list of all tickets.\n\n### POST /api/tickets\n\nCreates a new ticket.\n\n### GET /api/tickets/:id\n\nReturns details for a specific ticket.\n\n## Response Format\n\nAll responses are in JSON format with the following structure:\n\n```json\n{\n  "success": true,\n  "data": {},\n  "message": ""\n}\n```',
-    createdAt: "2023-06-10",
-    updatedAt: "2023-07-05",
-  },
-  {
-    id: 3,
-    slug: "best-practices",
-    title: "Best Practices",
-    content:
-      "# Best Practices\n\n## Ticket Management\n\n- Use clear, descriptive titles\n- Add detailed descriptions\n- Link related tickets\n- Update status regularly\n\n## Sprint Planning\n\n1. Review backlog items\n2. Estimate effort\n3. Set realistic goals\n4. Assign responsibilities\n\n## Documentation\n\n- Keep the wiki up-to-date\n- Use markdown for formatting\n- Include examples\n- Link related documents\n\n> **Tip**: Regular updates to documentation save time in the long run.",
-    createdAt: "2023-07-20",
-    updatedAt: "2023-08-15",
-  },
-]
 
 export default function WikiPage({ params }: { params: { teamId: string } }) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const pageId = searchParams.get("page")
   const { toast } = useToast()
   const { teamId } = params;
   const { selectedTeam } = { selectedTeam: { id: teamId } }//useTeam()
-  const [wikiPages, setWikiPages] = useState(mockWikiPages)
-  const [selectedPage, setSelectedPage] = useState(wikiPages[0])
+  //const [wikiPages, setWikiPages] = useState([])
+  const [selectedPage, setSelectedPage] = useState(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [isEditing, setIsEditing] = useState(false)
 
-  const { data, error, isLoading } = useSWR(`/api/wiki/${teamId}`, fetcher, { revalidateOnFocus: false });
+  const { data: pageList, error: pageListError, isLoading: isPageListLoading } = useSWR(`/api/wiki/${teamId}`, fetcher, { revalidateOnFocus: false });
+  const { data: pageContent, error: pageError, isLoading: pageLoading } = useSWR(selectedPage ? `/api/wiki/${teamId}/${pageId}` : "", fetcher, { revalidateOnFocus: false });
+  const wikiPages = pageList ? pageList : []
 
-
+  if (pageId && wikiPages.length !== 0 && !selectedPage) {
+    const page = wikiPages.find((p) => p.id === pageId)
+    if (page) {
+      setSelectedPage(page)
+      setIsEditing(false)
+    }
+  }
 
   // Form setup with Zod validation
   const form = useForm<WikiPageFormValues>({
     resolver: zodResolver(wikiPageSchema),
     defaultValues: {
-      title: selectedPage.title,
-      content: selectedPage.content,
+      title: selectedPage?.title ? selectedPage.title : "",
+      content: pageContent ? pageContent : "",
     },
   })
 
@@ -102,8 +81,8 @@ export default function WikiPage({ params }: { params: { teamId: string } }) {
   // Update form values when selected page changes
   useEffect(() => {
     form.reset({
-      title: selectedPage.title,
-      content: selectedPage.content,
+      title: selectedPage?.title ? selectedPage.title : "",
+      content: pageContent?.content ? pageContent.content : "",
     })
   }, [selectedPage, form])
 
@@ -119,7 +98,7 @@ export default function WikiPage({ params }: { params: { teamId: string } }) {
 
     // Update URL with the selected page slug without full page reload
     if (selectedTeam) {
-      const newUrl = `?page=${page.slug}`
+      const newUrl = `?page=${page.id}`
       router.push(newUrl, { scroll: false })
     }
   }
@@ -193,11 +172,8 @@ export default function WikiPage({ params }: { params: { teamId: string } }) {
     setIsEditing(true)
   }
 
-  if (isLoading) return <div>Loading...</div>
-  if (error) return <div>Error loading wiki pages</div>
-  if (data) {
-    console.log(data)
-  }
+  if (isPageListLoading) return <div>Loading...</div>
+  if (pageListError) return <div>Error loading wiki pages</div>
 
   return (
     <div className="flex h-full flex-col gap-6 p-6">
@@ -228,7 +204,7 @@ export default function WikiPage({ params }: { params: { teamId: string } }) {
                   <Button
                     key={page.id}
                     variant="ghost"
-                    className={`w-full justify-start ${selectedPage.id === page.id ? "bg-muted" : ""}`}
+                    className={`w-full justify-start ${selectedPage?.id === page.id ? "bg-muted" : ""}`}
                     onClick={() => handlePageSelect(page)}
                   >
                     <FileText className="mr-2 h-4 w-4" />
@@ -244,8 +220,8 @@ export default function WikiPage({ params }: { params: { teamId: string } }) {
           <CardHeader className="flex flex-row items-center justify-between">
             {!isEditing && (
               <>
-                <CardTitle>{selectedPage.title}</CardTitle>
-                <CardDescription>Last updated: {selectedPage.updatedAt}</CardDescription>
+                <CardTitle>{selectedPage?.title}</CardTitle>
+                <CardDescription>Last updated: {selectedPage?.updatedAt}</CardDescription>
                 <Button onClick={handleEdit}>Edit</Button>
               </>
             )}
@@ -272,7 +248,7 @@ export default function WikiPage({ params }: { params: { teamId: string } }) {
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="preview" className="prose max-w-none dark:prose-invert">
-                <ReactMarkdown>{selectedPage.content}</ReactMarkdown>
+                <ReactMarkdown>{pageContent?.content}</ReactMarkdown>
               </TabsContent>
               <TabsContent value="edit" className="h-full">
                 {isEditing && (
