@@ -29,7 +29,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             if (pathSegments.length > 2) {
                 setTeamId(pathSegments[2]);
                 console.log(pathSegments[2])
-            } else {
+            } else if (pathSegments.length === 2) {
                 const localTeamId = localStorage.getItem('teamId');
                 if (localTeamId) {
                     updateTeamId(localTeamId);
@@ -42,8 +42,11 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         setTeamId(id);
         console.log(id);
         localStorage.setItem('teamId', id);
+
         const pathSegments = pathname.split('/');
-        router.push(`/${pathSegments[1]}/${id}`);
+        if (pathSegments.length > 2) {
+            router.push(`/${pathSegments[1]}/${id}`);
+        }
     };
 
     return (

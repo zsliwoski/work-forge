@@ -2,10 +2,10 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { teamSchema } from '@/lib/schema';
 
-// GET /api/wiki/:teamId
+// GET /api/team/:teamId
 export async function GET(request: Request, { params }: { params: Promise<{ teamId: string }> }) {
     const { teamId } = await params;
-
+    console.log(teamId)
     if (!teamId) {
         return NextResponse.json({ error: 'Team ID is required' }, { status: 400 });
     }
@@ -16,9 +16,16 @@ export async function GET(request: Request, { params }: { params: Promise<{ team
             select: {
                 name: true,
                 description: true,
-                members: {
+                TeamRoles: {
                     select: {
-                        id: true, image: true, name: true, role: true
+                        User: {
+                            select: {
+                                id: true,
+                                image: true,
+                                name: true,
+                            }
+                        },
+                        role: true,
                     }
                 },
             },

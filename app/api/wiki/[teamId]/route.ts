@@ -3,7 +3,6 @@ import { prisma } from '@/lib/db';
 import { pageSchema } from '@/lib/schema';
 
 // GET /api/wiki/:teamId
-// GET /api/wiki/:teamId/:pageId
 export async function GET(request: Request, { params }: { params: Promise<{ teamId: string }> }) {
     const { teamId } = await params;
 

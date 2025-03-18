@@ -48,3 +48,8 @@ export const commentSchema = z.object({
     authorId: z.string().min(1, 'Author ID is required'),
     ticketId: z.string().min(1, 'Ticket ID is required'),
 });
+
+export const teamInviteSchema = z.object({
+    email: z.string().email('Invalid email address'),
+    role: z.number().int().max(3, 'Invalid role').min(0, 'Invalid role'),
+});

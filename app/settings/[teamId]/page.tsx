@@ -9,23 +9,82 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AddTeamMemberDialog } from "@/components/add-team-member-dialog"
 import { useToast } from "@/components/ui/use-toast"
+import useSWR from "swr"
+import { fetcher } from "@/lib/db"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
-export default function SettingsPage() {
+const roles = ["Admin", "Manager", "Developer", "Viewer"]
+
+export default function SettingsPage({ params }: { params: { teamId: string } }) {
   const { toast } = useToast()
+  const { teamId } = params
+
+  const { data, error, isLoading } = useSWR(`/api/team/${teamId}`, fetcher, { revalidateOnFocus: false })
+
+  const onAddMember = (email: string, role: string) => {
+    toast({
+      title: "Member Invited",
+      description: `An invite has been sent to ${email} with the role ${role}.`,
+    })
+  }
+
+  if (isLoading) return <div>Loading...</div>
+  if (error) return <div>Error loading team</div>
+  if (data) {
+    console.log(data)
+  }
 
   return (
     <div className="flex flex-col gap-6 p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Settings</h1>
+        <h1 className="text-3xl font-bold">Team Settings</h1>
       </div>
 
-      <Tabs defaultValue="general">
+      <Tabs defaultValue="members">
         <TabsList className="mb-4">
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="account">Account</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="teams">Teams</TabsTrigger>
+          <TabsTrigger value="members">Members</TabsTrigger>
+          <TabsTrigger value="general" disabled>General</TabsTrigger>
+          {/*<TabsTrigger value="account" disabled>Account</TabsTrigger>
+          <TabsTrigger value="notifications" disabled>Notifications</TabsTrigger>*/}
         </TabsList>
+
+        <TabsContent value="members">
+          <Card>
+            <CardHeader>
+              <CardTitle>Members</CardTitle>
+              <CardDescription>Manage your team roles and invited members</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div>
+                  <Label>Team Members</Label>
+                  <div className="mt-2 space-y-2 rounded-lg border p-4">
+                    {data.TeamRoles.map((member, index) => (
+                      <div key={index} className="flex items-center justify-between rounded-md border p-2">
+                        <span className="flex items-center space-x-2">
+                          <Avatar className="mr-2 w-8 h-8">
+                            <AvatarImage src={member.User.image} alt={member.User.name} />
+                            <AvatarFallback>{member.User.name[0]}</AvatarFallback>
+                          </Avatar>
+                          {member.User.name}
+                        </span>
+                        <span className="flex items-center space-x-2">
+                          <div className="mr-4 text-muted-foreground">{roles[member.role]}</div>
+                          <Button variant="ghost" size="sm">
+                            Remove
+                          </Button>
+                        </span>
+                      </div>
+                    ))}
+                    <AddTeamMemberDialog
+                      onAddMember={onAddMember}
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="general">
           <Card>
@@ -66,7 +125,7 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="account">
+        {/*<TabsContent value="account">
           <Card>
             <CardHeader>
               <CardTitle>Account Settings</CardTitle>
@@ -102,7 +161,7 @@ export default function SettingsPage() {
                       <SelectItem value="admin">Admin</SelectItem>
                       <SelectItem value="manager">Manager</SelectItem>
                       <SelectItem value="developer">Developer</SelectItem>
-                      <SelectItem value="designer">Designer</SelectItem>
+                      <SelectItem value="designer">Viewer</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -152,54 +211,7 @@ export default function SettingsPage() {
               <Button>Save Preferences</Button>
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="teams">
-          <Card>
-            <CardHeader>
-              <CardTitle>Team Settings</CardTitle>
-              <CardDescription>Manage your team and members</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="team-name">Team Name</Label>
-                  <Input id="team-name" defaultValue="Engineering Team" />
-                </div>
-                <div>
-                  <Label htmlFor="team-description">Team Description</Label>
-                  <Textarea
-                    id="team-description"
-                    defaultValue="Frontend and backend development team responsible for building and maintaining the application."
-                  />
-                </div>
-                <div>
-                  <Label>Team Members</Label>
-                  <div className="mt-2 space-y-2 rounded-lg border p-4">
-                    {["John Doe", "Jane Smith", "Bob Johnson", "Alice Williams"].map((member, index) => (
-                      <div key={index} className="flex items-center justify-between rounded-md border p-2">
-                        <span>{member}</span>
-                        <Button variant="ghost" size="sm">
-                          Remove
-                        </Button>
-                      </div>
-                    ))}
-                    <AddTeamMemberDialog
-                      onAddMember={(email, role) => {
-                        toast({
-                          title: "Team member invited",
-                          description: `Invitation sent to ${email} with ${role} role`,
-                        })
-                        // In a real app, you would make an API call here to send the invitation
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-              <Button>Save Team Settings</Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        </TabsContent>*/}
       </Tabs>
     </div>
   )

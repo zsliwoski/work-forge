@@ -13,11 +13,11 @@ export default function ClientLayout({
     children: React.ReactNode
 }>) {
     const pathname = usePathname()
-    const showSidebar = pathname !== "/"
-        && pathname !== "/sign-in"
-        && pathname !== "/create-organization"
-        && pathname !== "/organizations"
-        && !pathname.startsWith("/edit-organization");
+    const showSidebar = pathname.startsWith("/dashboard") ||
+        pathname.startsWith("/sprint-board") ||
+        pathname.startsWith("/tickets") ||
+        pathname.startsWith("/settings") ||
+        pathname.startsWith("/wiki")
 
     return (
         <div>

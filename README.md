@@ -1,6 +1,6 @@
 # WorkForge
 
-WorkForge is a powerful ticketing and wiki system that leverages AI and Analytics to help teams work faster and more efficiently. Built with a Next.js frontend and a Python backend, WorkForge provides a seamless and intuitive user experience.
+WorkForge is a powerful ticketing and wiki system that leverages AI and Analytics to help teams work faster and more efficiently. Built with a Next.js frontend, WorkForge provides a seamless and intuitive user experience.
 
 ## Features
 
@@ -54,4 +54,4 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Contact
 
-For any inquiries, please contact us at [zsliwoski@gmail.com].
+For any inquiries, please contact me at [zsliwoski@gmail.com].

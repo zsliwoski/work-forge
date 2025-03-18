@@ -139,7 +139,7 @@ export default function CreateOrganizationPage() {
             })
 
             // Redirect to the organization page
-            router.push(`/${data.organization.name.toLowerCase().replace(/\s+/g, "-")}`)
+            router.push(`/`)
         } catch (error) {
             toast({
                 title: "Error",
