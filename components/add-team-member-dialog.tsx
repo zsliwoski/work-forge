@@ -19,33 +19,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/components/ui/use-toast"
 import { UserPlus } from "lucide-react"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { inviteFormSchema } from "@/lib/schema"
 
 type TeamRole = "admin" | "manager" | "developer" | "viewer"
 
-// Define the validation schema with Zod
-const formSchema = z.object({
-    email: z.string().min(1, { message: "Email is required" }).email({ message: "Must be a valid email address" }),
-    role: z.enum(["admin", "manager", "developer", "viewer"], {
-        required_error: "Please select a role",
-    }),
-})
-
 // Type for the form values based on the schema
-type FormValues = z.infer<typeof formSchema>
+type FormValues = z.infer<typeof inviteFormSchema>
 
 interface AddTeamMemberDialogProps {
     onAddMember?: (email: string, role: TeamRole) => void
     inviterRole: number,
-    teamId: string
 }
 
-export function AddTeamMemberDialog({ onAddMember, inviterRole, teamId }: AddTeamMemberDialogProps) {
+export function AddTeamMemberDialog({ onAddMember, inviterRole }: AddTeamMemberDialogProps) {
     const [open, setOpen] = useState(false)
     const { toast } = useToast()
 
     // Initialize form with React Hook Form and Zod resolver
     const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
+        resolver: zodResolver(inviteFormSchema),
         defaultValues: {
             email: "",
             role: "viewer",
@@ -54,31 +46,8 @@ export function AddTeamMemberDialog({ onAddMember, inviterRole, teamId }: AddTea
 
     const handleSubmit = (values: FormValues) => {
         // Call the onAddMember callback if provided
-
-        const sendInvite = async () => {
-            try {
-                const data = { email: values.email, role: values.role }
-                const response = await fetch(`/api/invite/send/${teamId}`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(values),
-                })
-                if (response.ok) {
-                    if (onAddMember) {
-                        onAddMember(values.email, values.role)
-                    }
-                } else {
-                    const data = await response.json()
-                    throw new Error(data.error)
-                }
-            } catch (error) {
-                toast({
-                    title: "Error sending invite",
-                    description: "Team invite failed. Please try again.",
-                })
-            }
+        if (onAddMember) {
+            onAddMember(values.email, values.role)
         }
         // Reset form and close dialog
         form.reset()

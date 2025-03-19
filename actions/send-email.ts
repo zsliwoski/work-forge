@@ -1,17 +1,23 @@
 "use server"
 import { Resend } from 'resend';
 
+// NOTE: This may live in a cloud function or a separate serverless function
+// this will make it easier to renotify users if the email fails to send
+// or if the user needs to be reminded to accept the invite
+
 const resend = new Resend(process.env.RESEND_EMAIL_SECRET);
 
 interface InviteEmailData {
     email: string;
     teamName: string;
-    inviteLink: string;
+    inviteId: string;
 }
 
 export async function sendInviteEmail(data: InviteEmailData) {
     const fromEmail = process.env.RESEND_EMAIL;
     const toEmail = data.email;
+    const domainUrl = process.env.DOMAIN_URL ? process.env.DOMAIN_URL : 'http://localhost:3000'
+    const inviteLink = `${domainUrl}/invite/accepted?inviteId=${data.inviteId}`;
 
     if (!fromEmail || !toEmail) {
         throw new Error('Email addresses are required');
@@ -25,7 +31,7 @@ export async function sendInviteEmail(data: InviteEmailData) {
         ${data.teamName}
 
         Please click the link below to accept the invitation:
-        ${data.inviteLink}
+        ${inviteLink}
 
         Best regards,
         The Team

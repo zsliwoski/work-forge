@@ -12,21 +12,52 @@ import { useToast } from "@/components/ui/use-toast"
 import useSWR from "swr"
 import { fetcher } from "@/lib/db"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useUser } from "@/contexts/user-provider"
 
-const roles = ["Admin", "Manager", "Developer", "Viewer"]
+const namedRoles = ["Admin", "Manager", "Developer", "Viewer"]
+const roles = ["admin", "manager", "developer", "viewer"]
 
 export default function SettingsPage({ params }: { params: { teamId: string } }) {
   const { toast } = useToast()
+  const { user } = useUser()
   const { teamId } = params
 
   const { data, error, isLoading } = useSWR(`/api/team/${teamId}`, fetcher, { revalidateOnFocus: false })
 
   const onAddMember = (email: string, role: string) => {
-    toast({
-      title: "Member Invited",
-      description: `An invite has been sent to ${email} with the role ${role}.`,
-    })
+    const sendInvite = async () => {
+      try {
+        // get role as index
+        const data = { email, role: roles.indexOf(role) }
+        const response = await fetch(`/api/invite/send/${teamId}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        })
+        console.log(response)
+        if (response.ok) {
+          toast({
+            title: "Member Invited",
+            description: `An invite has been sent to ${email} with the role ${role}.`,
+          })
+        } else {
+          const data = await response.json()
+          console.log(data)
+          throw new Error(data.error)
+        }
+      } catch (error) {
+        toast({
+          title: "Error sending invite",
+          description: "Team invite failed. Please try again.",
+        })
+      }
+    }
+    sendInvite()
   }
+
+  const userRole = user ? user?.TeamRoles.find((role) => role.Team.id === teamId) : 3
 
   if (isLoading) return <div>Loading...</div>
   if (error) return <div>Error loading team</div>
@@ -69,7 +100,7 @@ export default function SettingsPage({ params }: { params: { teamId: string } })
                           {member.User.name}
                         </span>
                         <span className="flex items-center space-x-2">
-                          <div className="mr-4 text-muted-foreground">{roles[member.role]}</div>
+                          <div className="mr-4 text-muted-foreground">{namedRoles[member.role]}</div>
                           <Button variant="ghost" size="sm">
                             Remove
                           </Button>
@@ -78,6 +109,7 @@ export default function SettingsPage({ params }: { params: { teamId: string } })
                     ))}
                     <AddTeamMemberDialog
                       onAddMember={onAddMember}
+                      inviterRole={userRole}
                     />
                   </div>
                 </div>

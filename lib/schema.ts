@@ -1,18 +1,25 @@
 import { z } from 'zod';
 
+// Define the schema for the invite form
+export const inviteFormSchema = z.object({
+    email: z.string().email('Invalid email address'),
+    role: z.enum(['admin', 'manager', 'developer', 'viewer'], {
+        required_error: 'Please select a role',
+    }),
+});
+
 //Define the schema for the team object
 export const teamSchema = z.object({
     name: z.string().min(1, 'Name is required'),
     description: z.string().optional(),
-    invitations: z.array(z.object({
-        email: z.string().min(1, 'Member ID is required'),
-        role: z.string().optional(),
-    })).optional().default([]),
+    invitations: z.array(inviteFormSchema).optional().default([]),
+    icon: z.string().max(1, 'Icon must be a single character').optional().default(''),
 });
 
 // Define the schema for the organization object
 export const organizationSchema = z.object({
     name: z.string().min(1, 'Name is required'),
+    icon: z.string().max(1, 'Icon must be a single character').optional().default(''),
     description: z.string().optional(),
     teams: z.array(teamSchema).optional().default([])
 });
