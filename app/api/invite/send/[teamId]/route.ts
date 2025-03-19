@@ -91,10 +91,8 @@ export async function POST(req: NextRequest, { params }: { params: { teamId: str
                 },
             });
 
-
-
             // Send the invite email
-            // TODO: handle failure when sending email, but when invite still exists
+            // TODO: handle failure when sending email, but when invite still exists (e.g. serverless retry)
             const emailSuccess = await sendInviteEmail({
                 email,
                 teamName: team.name,

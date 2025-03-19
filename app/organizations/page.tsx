@@ -1,14 +1,15 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-//import { useOrganization } from "@/contexts/organization-context"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plus, Edit, ArrowLeft } from "lucide-react"
+import useSWR from "swr"
 
 export default function OrganizationsPage() {
     const { organizations, selectedOrganization } = { organizations: [{ name: "acme", icon: "i" }, { name: "incoportae", icon: "b" }], selectedOrganization: { name: "acme", icon: "i" } }//useOrganization()
     const router = useRouter()
+    const { data, isLoading, error } = useSWR("/api/organization")
 
     return (
         <div className="container mx-auto py-6 space-y-6">

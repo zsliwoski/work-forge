@@ -4,6 +4,41 @@ import { organizationSchema } from '@/lib/schema';
 import { getToken } from 'next-auth/jwt';
 import { sendInviteEmail } from '@/actions/send-email';
 
+//GET /api/organization
+export async function GET(req: NextRequest) {
+    const token = await getToken({
+        req,
+        raw: true
+    });
+
+    if (!token) {
+        return NextResponse.json({ error: 'User Authentication is required' }, { status: 401 });
+    }
+
+    try {
+        const userSession = await prisma.session.findFirst({ where: { sessionToken: token }, select: { userId: true } });
+        if (!userSession) {
+            return NextResponse.json({ error: 'User Session not found' }, { status: 404 });
+        }
+
+        const organizations = await prisma.organization.findMany({
+            where: { ownerId: userSession.userId },
+            select: {
+                id: true,
+                name: true,
+                icon: true,
+                description: true,
+            }
+        });
+
+        return NextResponse.json(organizations);
+
+    } catch (error) {
+        console.error(error);
+        return NextResponse.json({ error: 'Failed to fetch organizations' }, { status: 500 });
+    }
+}
+
 // POST /api/organization
 export async function POST(req: NextRequest) {
     const token = await getToken({
@@ -80,11 +115,12 @@ export async function POST(req: NextRequest) {
 
             // Send the invite email
             for (const invite of invitations) {
-                await sendInviteEmail({
+                console.log(invite); // wait to send emails for now
+                /*await sendInviteEmail({
                     email: invite.email,
                     teamName: team.name,
                     inviteId: invite.id,
-                });
+                });}*/
             }
         }
 
