@@ -14,10 +14,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { useToast } from "@/components/ui/use-toast"
 import { Separator } from "@/components/ui/separator"
+import { set } from "date-fns"
+import { organizationSchema } from "@/lib/schema"
+
 
 // Update the schemas with more detailed validation
 // Organization schema
-const organizationSchema = z.object({
+/*const organizationSchema = z.object({
     name: z.string()
         .min(2, { message: "Organization name must be at least 2 characters." })
         .max(50, { message: "Organization name must be less than 50 characters." }),
@@ -45,27 +48,29 @@ const formSchema = z.object({
     organization: organizationSchema,
     teams: z.array(teamSchema).min(1, { message: "Please create at least one team." }),
 })
-
-type FormValues = z.infer<typeof formSchema>
+*/
+type FormValues = z.infer<typeof organizationSchema>
 
 export default function CreateOrganizationPage() {
     const [step, setStep] = useState(1)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [teams, setTeams] = useState({})
     const router = useRouter()
     const { toast } = useToast()
 
     // Initialize form with default values
     const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
+        resolver: zodResolver(organizationSchema),
         defaultValues: {
-            organization: {
-                name: "",
-                description: "",
-            },
+            name: "",
+            icon: "",
+            description: "",
             teams: [
                 {
                     name: "",
-                    members: [{ email: "" }],
+                    icon: "",
+                    description: "",
+                    invitations: [{ email: "", role: "viewer" }],
                 },
             ],
         },
@@ -78,9 +83,12 @@ export default function CreateOrganizationPage() {
             ...currentTeams,
             {
                 name: "",
-                members: [{ email: "" }],
+                icon: "",
+                description: "",
+                invitations: [{ email: "", role: "viewer" }],
             },
         ])
+        setTeams(currentTeams)
     }
 
     // Remove a team
@@ -91,6 +99,7 @@ export default function CreateOrganizationPage() {
                 "teams",
                 currentTeams.filter((_, i) => i !== index),
             )
+            setTeams(currentTeams)
         } else {
             toast({
                 title: "Cannot remove team",
@@ -104,17 +113,19 @@ export default function CreateOrganizationPage() {
     const addMember = (teamIndex: number) => {
         const currentTeams = form.getValues("teams")
         const updatedTeams = [...currentTeams]
-        updatedTeams[teamIndex].members.push({ email: "" })
+        updatedTeams[teamIndex].invitations.push({ email: "", role: "viewer" })
         form.setValue("teams", updatedTeams)
+        setTeams(updatedTeams)
     }
 
     // Remove a member from a team
     const removeMember = (teamIndex: number, memberIndex: number) => {
         const currentTeams = form.getValues("teams")
         const updatedTeams = [...currentTeams]
-        if (updatedTeams[teamIndex].members.length > 1) {
-            updatedTeams[teamIndex].members = updatedTeams[teamIndex].members.filter((_, i) => i !== memberIndex)
+        if (updatedTeams[teamIndex].invitations.length > 1) {
+            updatedTeams[teamIndex].invitations = updatedTeams[teamIndex].invitations.filter((_, i) => i !== memberIndex)
             form.setValue("teams", updatedTeams)
+            setTeams(updatedTeams)
         } else {
             toast({
                 title: "Cannot remove member",
@@ -130,12 +141,22 @@ export default function CreateOrganizationPage() {
         try {
             console.log("Form submitted:", data)
 
-            // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 1000))
+            // Send the form data to the API
+            const response = await fetch("/api/organization", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+            })
+
+            if (!response.ok) {
+                throw new Error("Failed to create organization")
+            }
+            const json = await response.json()
+            console.log(json)
 
             toast({
                 title: "Organization created!",
-                description: `${data.organization.name} has been created with ${data.teams.length} teams.`,
+                description: `${data.name} has been created with ${data.teams.length} teams.`,
             })
 
             // Redirect to the organization page
@@ -155,7 +176,7 @@ export default function CreateOrganizationPage() {
     const goToNextStep = async () => {
         // Validate organization details before proceeding
         if (step === 1) {
-            const orgResult = await form.trigger("organization")
+            const orgResult = await form.trigger("name")
             if (orgResult) {
                 setStep(2)
             }
@@ -190,7 +211,7 @@ export default function CreateOrganizationPage() {
                                     <Separator />
                                     <FormField
                                         control={form.control}
-                                        name="organization.name"
+                                        name="name"
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Organization Name</FormLabel>
@@ -206,7 +227,7 @@ export default function CreateOrganizationPage() {
                                     />
                                     <FormField
                                         control={form.control}
-                                        name="organization.description"
+                                        name="description"
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Description (Optional)</FormLabel>
@@ -266,11 +287,11 @@ export default function CreateOrganizationPage() {
 
                                             <div className="space-y-2">
                                                 <FormLabel>Team Members</FormLabel>
-                                                {team.members.map((member, memberIndex) => (
+                                                {team.invitations.map((invitation, memberIndex) => (
                                                     <div key={memberIndex} className="flex items-center gap-2">
                                                         <FormField
                                                             control={form.control}
-                                                            name={`teams.${teamIndex}.members.${memberIndex}.email`}
+                                                            name={`teams.${teamIndex}.invitations.${memberIndex}.email`}
                                                             render={({ field }) => (
                                                                 <FormItem className="flex-1">
                                                                     <FormControl>
@@ -285,7 +306,7 @@ export default function CreateOrganizationPage() {
                                                             variant="outline"
                                                             size="icon"
                                                             onClick={() => removeMember(teamIndex, memberIndex)}
-                                                            disabled={team.members.length <= 1}
+                                                            disabled={team.invitations.length <= 1}
                                                         >
                                                             <Trash2 className="h-4 w-4" />
                                                         </Button>

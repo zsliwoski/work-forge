@@ -77,26 +77,35 @@ export async function POST(req: NextRequest) {
         });
 
         // Create teams and assign the user to the team as admin, create invitations
-        const teams = await prisma.team.createManyAndReturn({
-            data: validationResult.data.teams.map((team) => ({
-                name: team.name,
-                icon: team.icon,
-                description: team.description,
-                organizationId: organization.id,
-                TeamRoles: {
-                    create: {
-                        role: 0,
-                        userId: userSession.userId,
+        // NOTE: It is a limitation of prisma to not be able to create multiple records (with relations) in a single transaction
+        const teamTransactions = validationResult.data.teams.map(async (team) => {
+            return await prisma.team.create({
+                data: {
+                    name: team.name,
+                    icon: team.icon,
+                    description: team.description,
+                    organizationId: organization.id,
+                    TeamRoles: {
+                        create: {
+                            role: 0,
+                            userId: userSession.userId,
+                        }
+                    },
+                    TeamInvitations: {
+                        createMany: {
+                            data: team.invitations.map((invite) => {
+                                return {
+                                    email: invite.email,
+                                    role: 3,
+                                }
+                            })
+                        }
                     }
-                },
-                TeamInvitations: {
-                    create: team.invitations.map((invite) => ({
-                        email: invite.email,
-                        role: invite.role,
-                    }))
                 }
-            }))
+            })
         });
+
+        const teams = await Promise.all(teamTransactions);
 
         if (teams.length !== validationResult.data.teams.length) {
             return NextResponse.json({ error: 'Failed to create teams' }, { status: 500 });
@@ -123,8 +132,7 @@ export async function POST(req: NextRequest) {
                 });}*/
             }
         }
-
-
+        return NextResponse.json(organization, { status: 200 });
 
     } catch (error) {
         console.error(error);
