@@ -18,37 +18,6 @@ import { set } from "date-fns"
 import { organizationSchema } from "@/src/lib/schema"
 
 
-// Update the schemas with more detailed validation
-// Organization schema
-/*const organizationSchema = z.object({
-    name: z.string()
-        .min(2, { message: "Organization name must be at least 2 characters." })
-        .max(50, { message: "Organization name must be less than 50 characters." }),
-    description: z.string()
-        .max(500, { message: "Description must be less than 500 characters." })
-        .optional(),
-})
-
-// Team schema
-const teamSchema = z.object({
-    name: z.string()
-        .min(2, { message: "Team name must be at least 2 characters." })
-        .max(50, { message: "Team name must be less than 50 characters." }),
-    members: z.array(
-        z.object({
-            email: z.string()
-                .email({ message: "Please enter a valid email address." })
-                .min(1, { message: "Email is required." }),
-        }),
-    ).min(1, { message: "At least one team member is required." }),
-})
-
-// Combined schema for the entire form
-const formSchema = z.object({
-    organization: organizationSchema,
-    teams: z.array(teamSchema).min(1, { message: "Please create at least one team." }),
-})
-*/
 type FormValues = z.infer<typeof organizationSchema>
 
 export default function CreateOrganizationPage() {

@@ -11,18 +11,9 @@ import { useSession } from "next-auth/react"
 
 export default function InvitePage() {
     const { data: session } = useSession()
-    const [email, setEmail] = useState<string>("")
     const [copied, setCopied] = useState(false)
     const router = useRouter()
     const { toast } = useToast()
-
-    // In a real application, you would fetch the user's email from your auth provider
-    useEffect(() => {
-        // Simulating fetching user email
-        // Replace this with actual auth integration
-        const mockUserEmail = "user@example.com"
-        setEmail(mockUserEmail)
-    }, [])
 
     const copyToClipboard = async () => {
         try {

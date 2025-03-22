@@ -25,7 +25,7 @@ export default function SignInPage() {
     setIsLoading(true)
 
     // Simulate loading
-    setTimeout(() => {
+    /*setTimeout(() => {
       setIsLoading(false)
 
       router.push("/dashboard")
@@ -34,7 +34,7 @@ export default function SignInPage() {
         title: "Signed in successfully",
         description: "Welcome back to WorkForge!",
       })
-    }, 1000)
+    }, 1000)*/
 
   }
 
