@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { use, useState, useEffect } from "react"
 import useSWR from 'swr'
 
 import { Button } from "@/src/components/ui/button"
@@ -54,6 +54,11 @@ export default function TicketsPage({ params }: { params: { teamId: string } }) 
     "Next Sprint": true,
     Backlog: true,
   })
+  const [sprintMap, setSprintMap] = useState<Record<string, string | null>>({
+    "Current Sprint": null,
+    "Next Sprint": null,
+    Backlog: null
+  })
 
   // Replace the newTicket state with form handling
   const form = useForm<TicketFormValues>({
@@ -69,9 +74,19 @@ export default function TicketsPage({ params }: { params: { teamId: string } }) 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   const { data, error, isLoading } = useSWR(`/api/tickets/${teamId}`, fetcher, { revalidateOnFocus: false });
+  useEffect(() => {
+    if (data) {
+      const sprints = { "Current Sprint": data.team.currentSprintId, "Next Sprint": data.team.nextSprintId, Backlog: null }
+      setSprintMap(sprints)
+    }
+  }, [data])
+
+
   if (error) return <div>Failed to load</div>
   if (isLoading) return <div>Loading...</div>
-  if (data) console.log(data)
+  if (data) {
+
+  }
   const currentSprint = data.team.currentSprintId
   const nextSprint = data.team.nextSprintId
   const tickets = data.tickets
@@ -178,22 +193,38 @@ export default function TicketsPage({ params }: { params: { teamId: string } }) 
     e.preventDefault()
   }
 
-  const handleDrop = (e: React.DragEvent, sprintId: string) => {
+  const handleDrop = (e: React.DragEvent, sprint: string) => {
     e.preventDefault()
-    const ticketId = e.dataTransfer.getData("ticketId")
 
+    const updateSprint = async (ticketId: string, sprintId: string | null) => {
+      if (!sprintId) {
+        throw new Error("Invalid sprint ID")
+      }
+      const response = await fetch(`/api/tickets/${teamId}/${ticketId}?sprintId=${sprintId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ sprintId }),
+      })
+      if (!response.ok) {
+        throw new Error("Failed to update ticket")
+      }
+    }
+
+    const ticketId = e.dataTransfer.getData("ticketId")
+    const sprintId = sprint === "Backlog" ? null : sprintMap[sprint]
     const updatedTickets = tickets.map((ticket) => {
       if (ticket.id === ticketId) {
+        updateSprint(ticketId, sprintId).catch((error) => {
+          toast({
+            title: "Error",
+            description: error.message,
+          })
+        })
         return { ...ticket, sprintId }
       }
       return ticket
-    })
-
-    //setTickets(updatedTickets)
-
-    toast({
-      title: "Ticket updated",
-      description: `Ticket moved to ${sprintId}`,
     })
   }
 

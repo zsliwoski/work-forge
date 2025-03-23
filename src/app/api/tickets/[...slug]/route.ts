@@ -165,6 +165,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
     const teamId = slug[0];
     const ticketId = slug[1];
 
+    const { searchParams } = new URL(req.url);
+    // if sprintId is provided, it means the ticket is created for
+    const sprintId = searchParams.get('sprintId');
+    const status = searchParams.get('status');
+
     if (!teamId) {
         return NextResponse.json({ error: 'Invalid team ID' }, { status: 400 });
     }
@@ -172,16 +177,43 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
         return NextResponse.json({ error: 'Invalid ticket ID' }, { status: 400 });
     }
 
+    if (sprintId) {
+        try {
+            // Update the ticket with the provided sprint ID
+            const ticket = await prisma.ticket.update({
+                where: {
+                    id: ticketId,
+                },
+                data: {
+                    sprintId,
+                },
+            });
+            return NextResponse.json(ticket, { status: 200 });
+        } catch (error) {
+            return NextResponse.json({ error: 'Failed to update ticket' }, { status: 500 });
+        }
+    } else if (status) {
+        try {
+            // Update the ticket with the provided status
+            const ticket = await prisma.ticket.update({
+                where: {
+                    id: ticketId,
+                },
+                data: {
+                    status,
+                },
+            });
+            return NextResponse.json(ticket, { status: 200 });
+        } catch (error) {
+            return NextResponse.json({ error: 'Failed to update ticket' }, { status: 500 });
+        }
+    }
     // Parse the request body and validate it against the ticket schem
     const body = await req.json();
     const validationResult = ticketSchema.safeParse({ ...body, teamId, status: body.status || 'OPEN' });
 
     if (!validationResult.success) {
         return NextResponse.json({ error: validationResult.error.errors }, { status: 400 });
-    }
-
-    if (!body.title || !body.description) {
-        return NextResponse.json({ error: 'Title and description are required' }, { status: 400 });
     }
 
     try {
