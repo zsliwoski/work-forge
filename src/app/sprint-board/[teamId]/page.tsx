@@ -19,8 +19,9 @@ import { AlertCircle, CheckCircle } from "lucide-react"
 import { TicketPreviewDialog } from "@/src/components/ticket-preview-dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar"
 import { AssigneeFilter } from "@/src/components/assignee-filter"
-import useSWR from "swr"
+import useSWR, { mutate } from "swr"
 import { fetcher } from "@/src/lib/db"
+import { on } from "events"
 
 const priorityColors = {
   HIGH: "bg-red-500",
@@ -37,8 +38,7 @@ export default function SprintBoardPage({ params }: { params: { teamId: string }
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [selectedAssignee, setSelectedAssignee] = useState<any | null>(null)
 
-  const { data, error, isLoading } = useSWR(`/api/sprint/${teamId}`, fetcher, { revalidateOnFocus: false });
-
+  const { data, error, isLoading } = useSWR(`/api/sprint/${teamId}`, fetcher, { revalidateOnFocus: false })
 
   // Extract unique assignees from tickets
   const assignees = useMemo(() => {
@@ -64,29 +64,110 @@ export default function SprintBoardPage({ params }: { params: { teamId: string }
     return tickets.filter((ticket) => ticket.assignee?.id === selectedAssignee?.id)
   }, [tickets, selectedAssignee])
 
-  if (error) return <div>Failed to load</div>
-  if (isLoading) return <div>Loading...</div>
-  if (data) {
-    if (data.sprint) {
-      const sprint = data?.sprint || {};
-      const sprintTickets = sprint?.tickets ? sprint.tickets : [];
-      if (tickets.length === 0) {
-        setTickets(sprintTickets)
+
+
+  const onStartNextSprint = async () => {
+    try {
+      const response = await fetch(`/api/sprint/${teamId}?start`, {
+        method: "PUT",
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Sprint Started",
+          description: "The next sprint has been started successfully.",
+        })
+        window.location.reload()
+      } else {
+        throw new Error("Failed to start sprint")
       }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to start the next sprint.",
+        variant: "destructive",
+      })
     }
   }
 
 
-  const handleCompleteSprint = () => {
+
+  if (error) return <div>Failed to load</div>
+  if (isLoading) return <div>Loading...</div>
+  if (data) console.log(data)
+
+  // Handle case when no current sprint is found
+  if (!data?.sprint) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[70vh] gap-6 p-6">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>No Active Sprint</CardTitle>
+            <CardDescription>There is no active sprint for this team.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            {data?.nextSprint ? (
+              <>
+                <p>Would you like to start the next planned sprint?</p>
+                <Button
+                  onClick={onStartNextSprint}
+                >
+                  Start Next Sprint
+                </Button>
+              </>
+            ) : (
+              <>
+                <p>There are no planned sprints. You can create tickets first and then plan a new sprint.</p>
+                <Button
+                  onClick={() => {
+                    window.location.href = `/tickets/${teamId}`
+                  }}
+                >
+                  Go to Tickets
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // If we have a sprint, set the tickets
+  if (data.sprint) {
+    const sprint = data.sprint
+    const sprintTickets = sprint?.tickets ? sprint.tickets : []
+    if (tickets.length === 0) {
+      setTickets(sprintTickets)
+    }
+  }
+
+  const handleCompleteSprint = async () => {
     // Move all "Done" tickets to a completed state or archive
     const updatedTickets = tickets.filter((ticket) => ticket.status !== "Done")
     setTickets(updatedTickets)
-    setIsDialogOpen(false)
-
-    toast({
-      title: "Sprint completed",
-      description: "All completed tickets have been archived.",
-    })
+    try {
+      const response = await fetch(`/api/sprint/${teamId}?close`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+      if (!response.ok) throw new Error("Failed to start sprint")
+      await response.json()
+      toast({
+        title: "Sprint closed",
+        description: "The current sprint has been closed successfully.",
+      })
+      setIsDialogOpen(false)
+      // Refresh data
+      window.location.reload()
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to start sprint",
+      })
+    }
   }
 
   const handleDragStart = (e: React.DragEvent, ticketId: string) => {
@@ -101,19 +182,41 @@ export default function SprintBoardPage({ params }: { params: { teamId: string }
     e.preventDefault()
     const ticketId = e.dataTransfer.getData("ticketId")
 
+    const updateStatus = async (ticketId: string, status: string | null) => {
+      if (!status) {
+        throw new Error("Invalid status")
+      }
+      const response = await fetch(`/api/tickets/${teamId}/${ticketId}?status=${status}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status }),
+      })
+      if (!response.ok) {
+        throw new Error("Failed to update ticket")
+      }
+      toast({
+        title: "Ticket updated",
+        description: `Ticket moved to ${status}`,
+      })
+    }
+
     const updatedTickets = tickets.map((ticket) => {
       if (ticket.id === ticketId) {
+        updateStatus(ticketId, status).catch((error) => {
+          console.error(error)
+          toast({
+            title: "Error",
+            description: error.message,
+          })
+        })
         return { ...ticket, status }
       }
       return ticket
     })
 
     setTickets(updatedTickets)
-
-    toast({
-      title: "Ticket updated",
-      description: `Ticket moved to ${status}`,
-    })
   }
 
   const handleTicketClick = (ticket: (typeof tickets)[0]) => {
@@ -121,11 +224,34 @@ export default function SprintBoardPage({ params }: { params: { teamId: string }
     setIsPreviewOpen(true)
   }
 
-  const handleSaveTicket = (updatedTicket: (typeof tickets)[0]) => {
+  const handleSaveTicket = (updatedTicket: TicketFormValues) => {
     // Update the ticket in the tickets array
-    const updatedTickets = tickets.map((ticket) => (ticket.id === updatedTicket.id ? updatedTicket : ticket))
-
-    setTickets(updatedTickets)
+    //const updatedTickets = tickets.map((ticket) => (ticket.id === updatedTicket.id ? updatedTicket : ticket))
+    const updateTicket = async (ticketId: string, updatedTicket: TicketFormValues) => {
+      const response = await fetch(`/api/tickets/${teamId}/${ticketId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedTicket),
+      })
+      if (!response.ok) {
+        throw new Error("Failed to update ticket")
+      }
+      toast({
+        title: "Ticket updated",
+        description: `Ticket ${ticketId} has been updated successfully.`,
+      })
+      // Revalidate data after updating ticket
+      await mutate()
+    }
+    updateTicket(selectedTicket.id, updatedTicket).catch((error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+      })
+    })
+    //setTickets(updatedTickets)
   }
 
   const handleSelectAssignee = (assignee: any | null) => {

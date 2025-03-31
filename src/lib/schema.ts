@@ -31,7 +31,7 @@ export const ticketSchema = z.object({
     status: z.enum(['OPEN', 'IN PROGRESS', 'BLOCKED', 'CLOSED']).optional(),
     sprintId: z.string().optional(),
     priority: z.enum(['NONE', 'LOW', 'MEDIUM', 'HIGH']).optional(),
-    assigneeId: z.string().optional(),
+    assigneeId: z.string().optional().nullable(),
     tags: z.array(z.string()).max(10, "Must have less than 32 tags").optional().default([]),
 });
 

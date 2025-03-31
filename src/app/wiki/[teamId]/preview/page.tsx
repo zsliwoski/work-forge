@@ -13,10 +13,17 @@ import ReactMarkdown from "react-markdown"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/src/components/ui/form"
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/src/components/ui/form"
 import useSWR from "swr"
 import { fetcher } from "@/src/lib/db"
-import { set } from "date-fns"
 
 // Wiki page validation schema
 const wikiPageSchema = z.object({
@@ -29,22 +36,30 @@ const wikiPageSchema = z.object({
 
 type WikiPageFormValues = z.infer<typeof wikiPageSchema>
 
-
 export default function WikiPage({ params }: { params: { teamId: string } }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const pageId = searchParams.get("page")
   const { toast } = useToast()
-  const { teamId } = params;
-  const { selectedTeam } = { selectedTeam: { id: teamId } }//useTeam()
+  const { teamId } = params
+  const { selectedTeam } = { selectedTeam: { id: teamId } } //useTeam()
   //const [wikiPages, setWikiPages] = useState([])
   const [selectedPage, setSelectedPage] = useState(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [isEditing, setIsEditing] = useState(false)
   const [newPage, setNewPage] = useState(false)
 
-  const { data: pageList, error: pageListError, isLoading: isPageListLoading } = useSWR(`/api/wiki/${teamId}`, fetcher, { revalidateOnFocus: false });
-  const { data: pageContent, error: pageError, isLoading: pageLoading } = useSWR(selectedPage ? `/api/wiki/${teamId}/${pageId}` : "", fetcher, { revalidateOnFocus: false });
+  const {
+    data: pageList,
+    error: pageListError,
+    isLoading: isPageListLoading,
+  } = useSWR(`/api/wiki/${teamId}`, fetcher, { revalidateOnFocus: false })
+  const {
+    data: pageContent,
+    error: pageError,
+    isLoading: pageLoading,
+    mutate
+  } = useSWR(selectedPage ? `/api/wiki/${teamId}/${pageId}` : "", fetcher, { revalidateOnFocus: false })
   const wikiPages = pageList ? pageList : []
 
   if (pageId && wikiPages.length !== 0 && !selectedPage) {
@@ -89,7 +104,11 @@ export default function WikiPage({ params }: { params: { teamId: string } }) {
   }, [selectedPage, form])
 
   const filteredPages = wikiPages.filter((page) => page.title.toLowerCase().includes(searchQuery.toLowerCase()))
-
+  const navigateToNewPage = () => {
+    if (selectedTeam) {
+      router.push(`/wiki/${selectedTeam.id}/new`)
+    }
+  }
   const handlePageSelect = (page: (typeof wikiPages)[0]) => {
     setSelectedPage(page)
     form.reset({
@@ -110,24 +129,26 @@ export default function WikiPage({ params }: { params: { teamId: string } }) {
   }
 
   const onSubmit = (values: WikiPageFormValues) => {
-    if (!selectedTeam) {
+    if (!selectedTeam || !selectedPage) {
       return
     }
 
-    fetch(newPage ? `/api/wiki/${teamId}` : `/api/wiki/${teamId}/${pageId}`, {
-      method: newPage ? "POST" : "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(values),
-    })
-      .then((response) => {
+    const updateWikiPage = async () => {
+      try {
+        const response = await fetch(`/api/wiki/${teamId}/${pageId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(values),
+        })
+
         if (!response.ok) {
-          throw new Error("Failed to create Wiki Page")
+          throw new Error("Failed to update Wiki Page")
         }
-        return response.json()
-      }).then((data) => {
-        setNewPage(false)
+
+        const data = await response.json()
+
         const updatedPages = wikiPages.map((page) =>
           page.id === selectedPage.id
             ? {
@@ -136,9 +157,9 @@ export default function WikiPage({ params }: { params: { teamId: string } }) {
               content: data.content,
               updatedAt: new Date().toISOString().split("T")[0],
             }
-            : page,
+            : page
         )
-        //setWikiPages(updatedPages)
+
         setSelectedPage({
           ...selectedPage,
           title: data.title,
@@ -150,32 +171,17 @@ export default function WikiPage({ params }: { params: { teamId: string } }) {
           title: "Wiki page updated",
           description: "Your changes have been saved successfully.",
         })
-      }).catch((error) => {
+        await mutate()
+      } catch (error) {
         console.error(error)
-        setNewPage(false)
         toast({
           title: "Error",
           description: "Failed to update wiki page. Please try again.",
         })
-      });
-  }
-  const handleCreateNew = () => {
-    const newPage = {
-      id: wikiPages.length + 1,
-      slug: "new-page",
-      title: "New Page",
-      content: "# New Page\n\nStart writing your content here...",
-      createdAt: new Date().toISOString().split("T")[0],
-      updatedAt: new Date().toISOString().split("T")[0],
+      }
     }
-    setNewPage(true)
-    //setWikiPages([...wikiPages, newPage])
-    setSelectedPage(newPage)
-    form.reset({
-      title: newPage.title,
-      content: newPage.content,
-    })
-    setIsEditing(true)
+
+    updateWikiPage()
   }
 
   if (isPageListLoading) return <div>Loading...</div>
@@ -185,7 +191,7 @@ export default function WikiPage({ params }: { params: { teamId: string } }) {
     <div className="flex h-full flex-col gap-6 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Wiki</h1>
-        <Button onClick={handleCreateNew}>
+        <Button onClick={navigateToNewPage}>
           <Plus className="mr-2 h-4 w-4" /> New Page
         </Button>
       </div>

@@ -131,11 +131,9 @@ export default function TicketPage({ params }: { params: { teamId: string; ticke
 
       <div className="flex items-center justify-between mb-6">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-bold">{ticket.title}</h1>
-            <Badge variant="outline">{ticket.id}</Badge>
-          </div>
-          <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+          <Badge variant="outline" className="mb-2" title="Ticket ID">{ticket.id}</Badge>
+          <h1 className="text-3xl font-bold">{ticket.title}</h1>
+          <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground" title={`Created at ${ticket.createdAt}`}>
             <Clock className="h-4 w-4" />
             <span>Created on {ticket.createdAt.split('T')[0]}</span>
           </div>

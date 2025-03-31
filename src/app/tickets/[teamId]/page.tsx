@@ -2,8 +2,8 @@
 
 import type React from "react"
 
-import { use, useState, useEffect } from "react"
-import useSWR from 'swr'
+import { useState, useEffect } from "react"
+import useSWR from "swr"
 
 import { Button } from "@/src/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card"
@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/src/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/src/components/ui/select"
 import { Textarea } from "@/src/components/ui/textarea"
@@ -24,11 +25,19 @@ import { AlertCircle, ChevronDown, ChevronUp, Clock, Plus, Search } from "lucide
 import { TicketPreviewDialog } from "@/src/components/ticket-preview-dialog"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import * as z from "zod"
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/src/components/ui/form"
+import type * as z from "zod"
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/src/components/ui/form"
 import { ticketSchema } from "@/src/lib/schema"
 import { fetcher } from "@/src/lib/db"
-
+import { Label } from "@/src/components/ui/label"
 
 type TicketFormValues = z.infer<typeof ticketSchema>
 
@@ -57,7 +66,7 @@ export default function TicketsPage({ params }: { params: { teamId: string } }) 
   const [sprintMap, setSprintMap] = useState<Record<string, string | null>>({
     "Current Sprint": null,
     "Next Sprint": null,
-    Backlog: null
+    Backlog: null,
   })
 
   // Replace the newTicket state with form handling
@@ -73,19 +82,29 @@ export default function TicketsPage({ params }: { params: { teamId: string } }) 
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
-  const { data, error, isLoading } = useSWR(`/api/tickets/${teamId}`, fetcher, { revalidateOnFocus: false });
+  // Add a new state for the sprint dialog
+  const [isSprintDialogOpen, setIsSprintDialogOpen] = useState(false)
+  const [sprintDialogType, setSprintDialogType] = useState<"start" | "create">("start")
+  const [sprintFormData, setSprintFormData] = useState({
+    title: "",
+    description: "",
+  })
+
+  const { data, error, isLoading, mutate } = useSWR(`/api/tickets/${teamId}`, fetcher, { revalidateOnFocus: false })
   useEffect(() => {
     if (data) {
-      const sprints = { "Current Sprint": data.team.currentSprintId, "Next Sprint": data.team.nextSprintId, Backlog: null }
+      const sprints = {
+        "Current Sprint": data.team.currentSprintId,
+        "Next Sprint": data.team.nextSprintId,
+        Backlog: null,
+      }
       setSprintMap(sprints)
     }
   }, [data])
 
-
   if (error) return <div>Failed to load</div>
   if (isLoading) return <div>Loading...</div>
   if (data) {
-
   }
   const currentSprint = data.team.currentSprintId
   const nextSprint = data.team.nextSprintId
@@ -99,8 +118,73 @@ export default function TicketsPage({ params }: { params: { teamId: string } }) 
   )
   console.log(filteredTickets)
 
-  const handleCreateTicket = (values: TicketFormValues) => {
+  const onStartSprint = async () => {
+    if (sprintDialogType === "start") {
+      // Handle starting the next sprint
+      try {
+        const response = await fetch(`/api/sprint/${teamId}?start`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: sprintFormData.title,
+            description: sprintFormData.description,
+          }),
+        })
+        if (!response.ok) throw new Error("Failed to start sprint")
+        await response.json()
+        toast({
+          title: "Sprint started",
+          description: "The next sprint has been started successfully.",
+        })
+        // Reset form and close dialog
+        setSprintFormData({ title: "", description: "" })
+        setIsSprintDialogOpen(false)
 
+        // Revalidate data after starting a sprint
+        await mutate()
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to start sprint",
+        })
+      }
+    } else {
+      // Handle creating a new sprint
+      try {
+        const response = await fetch(`/api/sprint/${teamId}?next`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: sprintFormData.title,
+            description: sprintFormData.description,
+          }),
+        })
+        if (!response.ok) throw new Error("Failed to create sprint")
+        await response.json()
+        toast({
+          title: "Sprint created",
+          description: "A new sprint has been created successfully.",
+        })
+        // Reset form and close dialog
+        setSprintFormData({ title: "", description: "" })
+        setIsSprintDialogOpen(false)
+
+        // Revalidate data after creating a sprint
+        await mutate()
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to create sprint",
+        })
+      }
+    }
+  }
+
+  const handleCreateTicket = (values: TicketFormValues) => {
     fetch(`/api/tickets/${teamId}`, {
       method: "POST",
       headers: {
@@ -116,17 +200,6 @@ export default function TicketsPage({ params }: { params: { teamId: string } }) 
       })
       .then((data) => {
         const id = data.id
-        const createdAt = new Date().toISOString().split("T")[0]
-
-        /*setTickets([
-          ...tickets,
-          {
-            ...values,
-            id,
-            createdAt,
-            tags: values.tags || [],
-          },
-        ])*/
 
         form.reset({
           title: "",
@@ -137,6 +210,9 @@ export default function TicketsPage({ params }: { params: { teamId: string } }) 
         })
 
         setIsDialogOpen(false)
+
+        // Revalidate data after creating a ticket
+        mutate()
 
         toast({
           title: "Ticket created",
@@ -178,13 +254,63 @@ export default function TicketsPage({ params }: { params: { teamId: string } }) 
     }
   }
 
-  const handleSaveTicket = (updatedTicket: (typeof tickets)[0]) => {
+  const handleSaveTicket = (updatedTicket: TicketFormValues) => {
     // Update the ticket in the tickets array
-    const updatedTickets = tickets.map((ticket) => (ticket.id === updatedTicket.id ? updatedTicket : ticket))
-
+    //const updatedTickets = tickets.map((ticket) => (ticket.id === updatedTicket.id ? updatedTicket : ticket))
+    const updateTicket = async (ticketId: string, updatedTicket: TicketFormValues) => {
+      const response = await fetch(`/api/tickets/${teamId}/${ticketId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedTicket),
+      })
+      if (!response.ok) {
+        throw new Error("Failed to update ticket")
+      }
+      toast({
+        title: "Ticket updated",
+        description: `Ticket ${ticketId} has been updated successfully.`,
+      })
+      // Revalidate data after updating ticket
+      await mutate()
+    }
+    updateTicket(selectedTicket.id, updatedTicket).catch((error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+      })
+    })
     //setTickets(updatedTickets)
   }
 
+  const handleDeleteTicket = (ticketId: string) => {
+    const deleteTicket = async (ticketId: string) => {
+      const response = await fetch(`/api/tickets/${teamId}/${ticketId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+      if (!response.ok) {
+        throw new Error("Failed to delete ticket")
+      }
+      toast({
+        title: "Ticket deleted",
+        description: `Ticket ${ticketId} has been deleted successfully.`,
+      })
+      // Revalidate data after deleting ticket
+      await mutate()
+    }
+    deleteTicket(selectedTicket.id).catch((error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+      })
+    })
+    setSelectedTicket(null)
+    setIsPreviewOpen(false)
+  }
   const handleDragStart = (e: React.DragEvent, ticketId: string) => {
     e.dataTransfer.setData("ticketId", ticketId)
   }
@@ -197,10 +323,11 @@ export default function TicketsPage({ params }: { params: { teamId: string } }) 
     e.preventDefault()
 
     const updateSprint = async (ticketId: string, sprintId: string | null) => {
-      if (!sprintId) {
-        throw new Error("Invalid sprint ID")
+      let appliedSprintId = "null"
+      if (sprintId) {
+        appliedSprintId = sprintId
       }
-      const response = await fetch(`/api/tickets/${teamId}/${ticketId}?sprintId=${sprintId}`, {
+      const response = await fetch(`/api/tickets/${teamId}/${ticketId}?sprintId=${appliedSprintId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -210,21 +337,25 @@ export default function TicketsPage({ params }: { params: { teamId: string } }) 
       if (!response.ok) {
         throw new Error("Failed to update ticket")
       }
+
+      // Revalidate data after updating ticket sprint
+      await mutate()
+
+      toast({
+        title: "Ticket updated",
+        description: `Ticket ${ticketId} has been moved to ${sprint}.`,
+      })
     }
 
     const ticketId = e.dataTransfer.getData("ticketId")
     const sprintId = sprint === "Backlog" ? null : sprintMap[sprint]
-    const updatedTickets = tickets.map((ticket) => {
-      if (ticket.id === ticketId) {
-        updateSprint(ticketId, sprintId).catch((error) => {
-          toast({
-            title: "Error",
-            description: error.message,
-          })
-        })
-        return { ...ticket, sprintId }
-      }
-      return ticket
+
+    // Just call updateSprint directly, no need to update local state
+    updateSprint(ticketId, sprintId).catch((error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+      })
     })
   }
 
@@ -433,60 +564,144 @@ export default function TicketsPage({ params }: { params: { teamId: string } }) 
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, sprintId)}
               >
-                <div className="space-y-4">
-                  {sprintIdTickets.map((ticket) => (
-                    <div
-                      key={ticket.id}
-                      className="flex items-center rounded-md border p-2 shadow-sm cursor-pointer hover:border-primary transition-colors"
-                      onClick={() => handleTicketClick(ticket)}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, ticket.id)}
+                {/* For Current Sprint: Show start next sprint button if no current sprint exists */}
+                {sprintId === "Current Sprint" && !sprintMap["Current Sprint"] ? (
+                  <div className="flex items-center justify-center p-4">
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (sprintMap["Next Sprint"]) {
+                          setSprintDialogType("start")
+                          setIsSprintDialogOpen(true)
+                        }
+                      }}
+                      disabled={!sprintMap["Next Sprint"]}
                     >
-                      {/* Priority indicator bar */}
+                      {sprintMap["Next Sprint"] ? "Start Next Sprint" : "No Next Sprint Available"}
+                    </Button>
+                  </div>
+                ) : sprintId === "Next Sprint" && !sprintMap["Next Sprint"] ? (
+                  <div className="flex items-center justify-center p-4">
+                    <Button
+                      onClick={async (e) => {
+                        e.stopPropagation()
+                        try {
+                          const response = await fetch(`/api/sprint/${teamId}?next`, {
+                            method: "POST",
+                            headers: {
+                              "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({
+                              title: `Sprint ${new Date().toLocaleDateString()}`,
+                              description: "New sprint created automatically",
+                            }),
+                          })
+                          if (!response.ok) throw new Error("Failed to create sprint")
+                          await response.json()
+                          toast({
+                            title: "Sprint created",
+                            description: "A new sprint has been created successfully.",
+                          })
+                          // Revalidate data after creating a sprint
+                          await mutate()
+                        } catch (error) {
+                          toast({
+                            title: "Error",
+                            description: "Failed to create sprint",
+                          })
+                        }
+                      }}
+                    >
+                      Create New Sprint
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {sprintIdTickets.map((ticket) => (
                       <div
-                        className={`w-1 h-full self-stretch rounded-sm mr-2 ${priorityColors[ticket.priority as keyof typeof priorityColors]}`}
-                        aria-label={`Priority: ${ticket.priority}`}
-                      />
+                        key={ticket.id}
+                        className="flex items-center rounded-md border p-2 shadow-sm cursor-pointer hover:border-primary transition-colors"
+                        onClick={() => handleTicketClick(ticket)}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, ticket.id)}
+                      >
+                        {/* Priority indicator bar */}
+                        <div
+                          className={`w-1 h-full self-stretch rounded-sm mr-2 ${priorityColors[ticket.priority as keyof typeof priorityColors]}`}
+                          aria-label={`Priority: ${ticket.priority}`}
+                        />
 
-                      {/* Ticket title */}
-                      <div className="flex-1 min-w-0 font-medium text-sm truncate">{ticket.title}</div>
+                        {/* Ticket title */}
+                        <div className="flex-1 min-w-0 font-medium text-sm truncate">{ticket.title}</div>
 
-                      {/* Ticket number */}
-                      <div className="text-xs text-muted-foreground mx-2 whitespace-nowrap">{ticket.id}</div>
+                        {/* Ticket number */}
+                        <div className="text-xs text-muted-foreground mx-2 whitespace-nowrap">{ticket.id}</div>
 
-                      {/* Creation date */}
-                      <div className="text-xs text-muted-foreground mr-2 hidden sm:block whitespace-nowrap">
-                        <Clock className="h-3 w-3 inline mr-1" />
-                        {ticket.createdAt.split("T")[0]}
+                        {/* Creation date */}
+                        <div className="text-xs text-muted-foreground mr-2 hidden sm:block whitespace-nowrap">
+                          <Clock className="h-3 w-3 inline mr-1" />
+                          {ticket.createdAt.split("T")[0]}
+                        </div>
                       </div>
-
-                      {/* User avatar */}
-                      {/*<div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
-                        {ticket.assignee
-                          .split(" ")
-                          .map((name) => name[0])
-                          .join("")}
-                      </div>*/}
-                    </div>
-                  ))}
-                  {sprintIdTickets.length === 0 && (
-                    <div className="flex items-center justify-center rounded-lg border border-dashed p-4 text-center">
-                      <AlertCircle className="h-4 w-4 text-muted-foreground mr-2" />
-                      <p className="text-sm text-muted-foreground">No tickets found</p>
-                    </div>
-                  )}
-                </div>
+                    ))}
+                    {sprintIdTickets.length === 0 && (
+                      <div className="flex items-center justify-center rounded-lg border border-dashed p-4 text-center">
+                        <AlertCircle className="h-4 w-4 text-muted-foreground mr-2" />
+                        <p className="text-sm text-muted-foreground">No tickets found</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             )}
           </Card>
         ))}
       </div>
-
+      <Dialog open={isSprintDialogOpen} onOpenChange={setIsSprintDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{sprintDialogType === "start" ? "Start Next Sprint" : "Create New Sprint"}</DialogTitle>
+            <DialogDescription>
+              {sprintDialogType === "start"
+                ? "Provide details for the sprint you are about to start."
+                : "Create a new sprint for your team."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="sprintTitle">Sprint Title</Label>
+              <Input
+                id="sprintTitle"
+                value={sprintFormData.title}
+                onChange={(e) => setSprintFormData({ ...sprintFormData, title: e.target.value })}
+                placeholder="Enter sprint title"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="sprintDescription">Description</Label>
+              <Textarea
+                id="sprintDescription"
+                value={sprintFormData.description}
+                onChange={(e) => setSprintFormData({ ...sprintFormData, description: e.target.value })}
+                placeholder="Enter sprint description"
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsSprintDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={onStartSprint}>{sprintDialogType === "start" ? "Start Sprint" : "Create Sprint"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <TicketPreviewDialog
         ticket={selectedTicket}
         open={isPreviewOpen}
         onOpenChange={setIsPreviewOpen}
         onSave={handleSaveTicket}
+        onDelete={handleDeleteTicket}
       />
     </div>
   )

@@ -17,7 +17,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ team
             summary: true
         }, orderBy: {
             updatedAt: 'desc'
-        }, take: 5
+        }, take: 3
     });
     const categoryCount = await prisma.wikiPage.groupBy({ by: 'category', where: { teamId }, _count: { id: true } });
     return NextResponse.json({ recentPages, categoryCount });

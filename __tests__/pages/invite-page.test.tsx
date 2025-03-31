@@ -2,8 +2,9 @@
 /**
  * @jest-environment jsdom
  */
-import '@testing-library/jest-dom'
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import "@testing-library/jest-dom"
+import { render, screen, fireEvent } from "@testing-library/react"
+import { act } from "react" // Import act from react
 import InvitePage from "@/src/app/invite/page"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/src/hooks/use-toast"
@@ -139,8 +140,10 @@ describe("InvitePage Component", () => {
 
         render(<InvitePage />)
 
-        // Click the copy button
-        fireEvent.click(screen.getByLabelText("Copy email to clipboard"))
+        // Click the copy button wrapped in act
+        await act(async () => {
+            fireEvent.click(screen.getByLabelText("Copy email to clipboard"))
+        })
 
         // Check if clipboard API was called with the correct email
         expect(mockWriteText).toHaveBeenCalledWith(mockEmail)
@@ -154,13 +157,13 @@ describe("InvitePage Component", () => {
         // Check if the icon changes to check mark
         expect(screen.getByTestId("check-icon")).toBeInTheDocument()
 
-        // Fast-forward timer
-        jest.advanceTimersByTime(2000)
+        // Fast-forward timer wrapped in act
+        await act(async () => {
+            jest.advanceTimersByTime(2000)
+        })
 
         // Check if the copied state is reset after 2 seconds
-        await waitFor(() => {
-            expect(screen.getByTestId("copy-icon")).toBeInTheDocument()
-        })
+        expect(screen.getByTestId("copy-icon")).toBeInTheDocument()
     })
 
     test("shows error toast when clipboard copy fails", async () => {
@@ -169,33 +172,35 @@ describe("InvitePage Component", () => {
 
         render(<InvitePage />)
 
-        // Click the copy button
-        fireEvent.click(screen.getByLabelText("Copy email to clipboard"))
+        // Click the copy button wrapped in act
+        await act(async () => {
+            fireEvent.click(screen.getByLabelText("Copy email to clipboard"))
+        })
 
         // Check if toast was called with error message
-        await waitFor(() => {
-            expect(mockToast).toHaveBeenCalledWith({
-                title: "Failed to copy",
-                description: "Could not copy email to clipboard",
-                variant: "destructive",
-            })
+        expect(mockToast).toHaveBeenCalledWith({
+            title: "Failed to copy",
+            description: "Could not copy email to clipboard",
+            variant: "destructive",
         })
 
         // Check that the icon doesn't change to check mark
         expect(screen.queryByTestId("check-icon")).not.toBeInTheDocument()
     })
 
-    test("redirects to create organization page when button is clicked", () => {
+    test("redirects to create organization page when button is clicked", async () => {
         render(<InvitePage />)
 
-        // Click the create organization button
-        fireEvent.click(screen.getByText("Create Organization"))
+        // Click the create organization button wrapped in act
+        await act(async () => {
+            fireEvent.click(screen.getByText("Create Organization"))
+        })
 
         // Check if router.push was called with the correct path
         expect(mockPush).toHaveBeenCalledWith("/create-organization")
     })
 
-    test("handles case when session has no user email", () => {
+    test("handles case when session has no user email", async () => {
         // Setup session mock with no user email
         ; (useSession as jest.Mock).mockReturnValue({
             data: {
@@ -207,8 +212,10 @@ describe("InvitePage Component", () => {
 
         render(<InvitePage />)
 
-        // Try to copy non-existent email
-        fireEvent.click(screen.getByLabelText("Copy email to clipboard"))
+        // Try to copy non-existent email wrapped in act
+        await act(async () => {
+            fireEvent.click(screen.getByLabelText("Copy email to clipboard"))
+        })
 
         // Check that clipboard API was not called
         expect(mockWriteText).not.toHaveBeenCalled()

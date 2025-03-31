@@ -179,13 +179,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
 
     if (sprintId) {
         try {
+            let appliedSprintId = null;
+            if (sprintId !== 'null') {
+                appliedSprintId = sprintId;
+            }
             // Update the ticket with the provided sprint ID
             const ticket = await prisma.ticket.update({
                 where: {
                     id: ticketId,
                 },
                 data: {
-                    sprintId,
+                    sprintId: appliedSprintId,
                 },
             });
             return NextResponse.json(ticket, { status: 200 });
@@ -213,6 +217,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
     const validationResult = ticketSchema.safeParse({ ...body, teamId, status: body.status || 'OPEN' });
 
     if (!validationResult.success) {
+        console.log(validationResult.error)
         return NextResponse.json({ error: validationResult.error.errors }, { status: 400 });
     }
 
@@ -222,10 +227,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
             where: {
                 id: ticketId,
             },
-            data: body,
+            data: {
+                title: body.title,
+                description: body.description,
+                status: body.status,
+                assigneeId: body.assigneeId,
+            },
         });
         return NextResponse.json(ticket, { status: 200 });
     } catch (error) {
+        console.log(error)
         return NextResponse.json({ error: 'Failed to update ticket' }, { status: 500 });
     }
 }
