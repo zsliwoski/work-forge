@@ -4,19 +4,27 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { Plus, Trash2, ArrowRight, ArrowLeft, Building, Users } from 'lucide-react'
+import type { z } from "zod"
+import { Plus, Trash2, ArrowRight, ArrowLeft, Building, Users, Smile } from "lucide-react"
+import EmojiPicker from "emoji-picker-react"
 
 import { Button } from "@/src/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/src/components/ui/card"
 import { Input } from "@/src/components/ui/input"
 import { Textarea } from "@/src/components/ui/textarea"
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/src/components/ui/form"
+import {
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from "@/src/components/ui/form"
 import { useToast } from "@/src/components/ui/use-toast"
 import { Separator } from "@/src/components/ui/separator"
-import { set } from "date-fns"
+import { Popover, PopoverContent, PopoverTrigger } from "@/src/components/ui/popover"
 import { organizationSchema } from "@/src/lib/schema"
-
 
 type FormValues = z.infer<typeof organizationSchema>
 
@@ -104,6 +112,20 @@ export default function CreateOrganizationPage() {
         }
     }
 
+    // Handle emoji selection for organization
+    const handleOrgEmojiSelect = (emojiData: any) => {
+        form.setValue("icon", emojiData.emoji)
+    }
+
+    // Handle emoji selection for team
+    const handleTeamEmojiSelect = (teamIndex: number, emojiData: any) => {
+        const currentTeams = form.getValues("teams")
+        const updatedTeams = [...currentTeams]
+        updatedTeams[teamIndex].icon = emojiData.emoji
+        form.setValue("teams", updatedTeams)
+        setTeams(updatedTeams)
+    }
+
     // Handle form submission
     const onSubmit = async (data: FormValues) => {
         setIsSubmitting(true)
@@ -178,6 +200,35 @@ export default function CreateOrganizationPage() {
                                         <h2 className="text-xl font-semibold">I. Organization Details</h2>
                                     </div>
                                     <Separator />
+                                    <div className="flex items-center gap-4">
+                                        <FormField
+                                            control={form.control}
+                                            name="icon"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Organization Icon</FormLabel>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex h-10 w-10 items-center justify-center rounded-md border text-lg">
+                                                            {field.value || "🏢"}
+                                                        </div>
+                                                        <Popover>
+                                                            <PopoverTrigger asChild>
+                                                                <Button variant="outline" size="sm">
+                                                                    <Smile className="mr-2 h-4 w-4" />
+                                                                    Select Emoji
+                                                                </Button>
+                                                            </PopoverTrigger>
+                                                            <PopoverContent className="w-full p-0" align="start">
+                                                                <EmojiPicker onEmojiClick={handleOrgEmojiSelect} />
+                                                            </PopoverContent>
+                                                        </Popover>
+                                                    </div>
+                                                    <FormDescription>Choose an emoji that represents your organization.</FormDescription>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
                                     <FormField
                                         control={form.control}
                                         name="name"
@@ -239,6 +290,36 @@ export default function CreateOrganizationPage() {
                                                 >
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <FormField
+                                                    control={form.control}
+                                                    name={`teams.${teamIndex}.icon`}
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Team Icon</FormLabel>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="flex h-10 w-10 items-center justify-center rounded-md border text-lg">
+                                                                    {field.value || "👥"}
+                                                                </div>
+                                                                <Popover>
+                                                                    <PopoverTrigger asChild>
+                                                                        <Button variant="outline" size="sm">
+                                                                            <Smile className="mr-2 h-4 w-4" />
+                                                                            Select Emoji
+                                                                        </Button>
+                                                                    </PopoverTrigger>
+                                                                    <PopoverContent className="w-full p-0" align="start">
+                                                                        <EmojiPicker
+                                                                            onEmojiClick={(emojiData) => handleTeamEmojiSelect(teamIndex, emojiData)}
+                                                                        />
+                                                                    </PopoverContent>
+                                                                </Popover>
+                                                            </div>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
                                             </div>
                                             <FormField
                                                 control={form.control}

@@ -13,13 +13,13 @@ export const teamSchema = z.object({
     name: z.string().min(1, 'Name is required'),
     description: z.string().optional(),
     invitations: z.array(inviteFormSchema).optional().default([]),
-    icon: z.string().max(1, 'Icon must be a single character').optional().default(''),
+    icon: z.string().max(10, "Icon should be a single emoji").optional(),
 });
 
 // Define the schema for the organization object
 export const organizationSchema = z.object({
     name: z.string().min(1, 'Name is required'),
-    icon: z.string().max(1, 'Icon must be a single character').optional().default(''),
+    icon: z.string().max(10, "Icon should be a single emoji").optional(),
     description: z.string().optional(),
     teams: z.array(teamSchema).optional().default([])
 });
