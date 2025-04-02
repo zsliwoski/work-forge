@@ -8,7 +8,7 @@ import { Input } from "@/src/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/tabs"
 import { Textarea } from "@/src/components/ui/textarea"
 import { useToast } from "@/src/components/ui/use-toast"
-import { FileText, Plus, Search } from "lucide-react"
+import { FileText, Plus, Search, Trash2 } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
@@ -58,7 +58,7 @@ export default function WikiPage({ params }: { params: { teamId: string } }) {
     data: pageContent,
     error: pageError,
     isLoading: pageLoading,
-    mutate
+    mutate,
   } = useSWR(selectedPage ? `/api/wiki/${teamId}/${pageId}` : "", fetcher, { revalidateOnFocus: false })
   const wikiPages = pageList ? pageList : []
 
@@ -101,7 +101,7 @@ export default function WikiPage({ params }: { params: { teamId: string } }) {
       title: selectedPage?.title ? selectedPage.title : "",
       content: pageContent?.content ? pageContent.content : "",
     })
-  }, [selectedPage, form])
+  }, [selectedPage, form, pageContent])
 
   const filteredPages = wikiPages.filter((page) => page.title.toLowerCase().includes(searchQuery.toLowerCase()))
   const navigateToNewPage = () => {
@@ -126,6 +126,41 @@ export default function WikiPage({ params }: { params: { teamId: string } }) {
 
   const handleEdit = () => {
     setIsEditing(true)
+  }
+
+  const handleDelete = async () => {
+    if (!selectedTeam || !selectedPage) {
+      return
+    }
+
+    if (!confirm("Are you sure you want to delete this wiki page? This action cannot be undone.")) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/wiki/${teamId}/${pageId}`, {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to delete Wiki Page")
+      }
+
+      toast({
+        title: "Wiki page deleted",
+        description: "The page has been deleted successfully.",
+      })
+
+      // Remove the page from the list and reset selection
+      router.push(`/wiki/${teamId}`)
+      setSelectedPage(null)
+    } catch (error) {
+      console.error(error)
+      toast({
+        title: "Error",
+        description: "Failed to delete wiki page. Please try again.",
+      })
+    }
   }
 
   const onSubmit = (values: WikiPageFormValues) => {
@@ -157,7 +192,7 @@ export default function WikiPage({ params }: { params: { teamId: string } }) {
               content: data.content,
               updatedAt: new Date().toISOString().split("T")[0],
             }
-            : page
+            : page,
         )
 
         setSelectedPage({
@@ -234,7 +269,12 @@ export default function WikiPage({ params }: { params: { teamId: string } }) {
               <>
                 <CardTitle>{selectedPage?.title}</CardTitle>
                 <CardDescription>Last updated: {selectedPage?.updatedAt}</CardDescription>
-                <Button onClick={handleEdit}>Edit</Button>
+                <div className="flex gap-2">
+                  <Button onClick={handleEdit}>Edit</Button>
+                  <Button variant="destructive" size="icon" onClick={handleDelete}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </>
             )}
             {isEditing && (

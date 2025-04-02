@@ -74,9 +74,7 @@ export default function SettingsPage({ params }: { params: { teamId: string } })
       <Tabs defaultValue="members">
         <TabsList className="mb-4">
           <TabsTrigger value="members">Members</TabsTrigger>
-          <TabsTrigger value="general" disabled>General</TabsTrigger>
-          {/*<TabsTrigger value="account" disabled>Account</TabsTrigger>
-          <TabsTrigger value="notifications" disabled>Notifications</TabsTrigger>*/}
+          <TabsTrigger disabled value="general">General</TabsTrigger>
         </TabsList>
 
         <TabsContent value="members">

@@ -9,6 +9,7 @@ import { BookOpen, Clock, FileText, Plus, Search, Star, TrendingUp, Users, Armch
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/tabs"
 import { fetcher } from "@/src/lib/db"
 import useSWR from "swr"
+import { WIKI_CATEGORIES } from "@/src/types/wiki"
 
 
 const categories = [
@@ -117,7 +118,7 @@ export default function WikiHomePage({ params }: { params: { teamId: string } })
                           <FileText className="mr-2 h-5 w-5 text-primary" />
                           {page.title}
                         </CardTitle>
-                        <CardDescription>{page.category}</CardDescription>
+                        <CardDescription>{WIKI_CATEGORIES[page.category]}</CardDescription>
                       </div>
                     </div>
                   </CardHeader>

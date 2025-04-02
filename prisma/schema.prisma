@@ -92,15 +92,26 @@ model Team {
 }
 
 model Sprint {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  completed   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  tickets     Ticket[]
-  Team        Team     @relation("TeamSprints", fields: [teamId], references: [id], onDelete: Cascade)
-  teamId      String
+  id                  String                @id @default(cuid())
+  title               String
+  description         String?
+  completed           Boolean               @default(false)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  tickets             Ticket[]
+  Team                Team                  @relation("TeamSprints", fields: [teamId], references: [id], onDelete: Cascade)
+  teamId              String
+  SprintDailyProgress SprintDailyProgress[]
+}
+
+model SprintDailyProgress {
+  id        String   @id @default(cuid())
+  sprintId  String
+  createdAt DateTime @default(now())
+  completed Int
+  blocked   Int
+  remaining Int
+  Sprint    Sprint   @relation(fields: [sprintId], references: [id], onDelete: Cascade)
 }
 
 // TICKETS

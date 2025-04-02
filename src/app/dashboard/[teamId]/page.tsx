@@ -21,6 +21,8 @@ import {
   Sector,
 } from "recharts"
 import { useUser } from "@/src/contexts/user-provider"
+import useSWR from "swr"
+import { fetcher } from "@/src/lib/db"
 
 // Mock ticket data for dashboard
 const mockRecentTickets = [
@@ -120,6 +122,13 @@ const ticketDistributionData = [
   { name: "Done", value: 10, color: "#22c55e" },
 ]
 
+const ticketDistributionColors = {
+  "OPEN": "#94a3b8",
+  "IN PROGRESS": "#3b82f6",
+  "BLOCKED": "#ef4444",
+  "CLOSED": "#22c55e",
+}
+
 // Custom tooltip for Sprint Progress chart
 const SprintProgressTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -182,14 +191,22 @@ const renderActiveShape = (props: any) => {
 
 export default function Dashboard({ params }: { params: { teamId: string } }) {
   const router = useRouter()
-  const { teamId } = params;
+  const { teamId } = params
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
+  const [ticketDistributionData, setTicketDistributionData] = useState(null)
+  const [sprintProgressData, setSprintProgressData] = useState(null)
+  const [teamInfo, setTeamInfo] = useState(null)
+  const [wikiPages, setWikiPages] = useState<any[]>([])
+  const [recentTickets, setRecentTickets] = useState<any[]>([])
+  const [ticketTotals, setTicketTotals] = useState<any[]>([])
 
   const { user } = useUser()
   const teams = user?.TeamRoles.map((role) => role.Team) || []
   const selectedTeam = teams.find((team) => team.id === teamId)
+
+  const { data, isLoading, error } = useSWR(`/api/dashboard/${teamId}`, fetcher, { revalidateOnFocus: false })
 
   // Redirect to team-specific dashboard
   useEffect(() => {
@@ -197,6 +214,60 @@ export default function Dashboard({ params }: { params: { teamId: string } }) {
       router.push(`/dashboard/${teamId}`)
     }
   }, [teamId, router])
+
+  useEffect(() => {
+    if (data) {
+      console.log(data)
+      const { recentTicketEdits, recentWikiEdits, ticketDistribution, sprintDailyProgress, team, ticketTotals } = data
+      //setSelectedTicket(recentTickets[0] || null)
+      if (ticketDistribution) {
+        const ticketStatusDistribution = ticketDistribution.map((item: any) => ({
+          name: item.status,
+          value: item._count.id,
+          color: ticketDistributionColors[item.status] || "#000000",
+        }))
+        setTicketDistributionData(ticketStatusDistribution)
+      }
+
+      setTeamInfo(team)
+      setWikiPages(recentWikiEdits)
+      setRecentTickets(recentTicketEdits)
+
+      if (ticketTotals) {
+        // turn the ticket counts array into a map
+        const ticketTotalsMap = ticketTotals.reduce((acc: any, item: any) => {
+          acc[item.status] = item._count.id
+          return acc
+        }, {})
+        // set the total number of tickets in the ticket counts map for any and all present values
+        ticketTotalsMap["TOTAL"] = Object.values(ticketTotalsMap).reduce((acc: number, count: number) => acc + count, 0)
+        setTicketTotals(ticketTotalsMap)
+      }
+
+      // Check if we have sprint daily progress data
+      if (sprintDailyProgress) {
+        const sprintProgress = [...sprintDailyProgress]
+        const remainingTickets =
+          (ticketDistribution.find((item: any) => item.status === "IN PROGRESS")?._count?.id || 0) +
+          (ticketDistribution.find((item: any) => item.status === "OPEN")?._count?.id || 0)
+        const todayProgress = {
+          completed: ticketDistribution.find((item: any) => item.status === "CLOSED")?._count?.id || 0,
+          remaining: remainingTickets,
+          blocked: ticketDistribution.find((item: any) => item.status === "BLOCKED")?._count?.id || 0,
+        }
+        sprintProgress.push(todayProgress)
+
+        // Add a day property to each object in the sprint progress data, day should just be the 'Day ' followed by index
+        sprintProgress.forEach((item: any, index: number) => {
+          item.day = `Day ${index + 1}`
+        })
+
+        console.log(sprintProgress)
+
+        setSprintProgressData(sprintProgress)
+      }
+    }
+  }, [data])
 
   const handleTicketClick = (ticket: any) => {
     if (teamId) {
@@ -214,12 +285,33 @@ export default function Dashboard({ params }: { params: { teamId: string } }) {
     setActiveIndex(index)
   }
 
+  const completionPercentage = () => {
+    if (!ticketTotals) return 0
+    if (ticketTotals.CLOSED === undefined) return 0
+    if (ticketTotals.TOTAL === undefined) return 0
+    if (ticketTotals.TOTAL > 0) {
+      return Math.round((ticketTotals.CLOSED / ticketTotals.TOTAL) * 100)
+    }
+    return 0
+  }
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>
+  }
+  if (error) {
+    return <div className="flex items-center justify-center h-screen">Error loading data</div>
+  }
+
   return (
     <div className="flex flex-col gap-6 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">
           Dashboard -
-          {selectedTeam && <span className="ml-2 text-muted-foreground">{selectedTeam.icon} {selectedTeam.name}</span>}
+          {selectedTeam && (
+            <span className="ml-2 text-muted-foreground">
+              {selectedTeam.icon} {selectedTeam.name}
+            </span>
+          )}
         </h1>
       </div>
 
@@ -230,8 +322,8 @@ export default function Dashboard({ params }: { params: { teamId: string } }) {
             <Ticket className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">45</div>
-            <p className="text-xs text-muted-foreground">+2 from last sprint</p>
+            <div className="text-2xl font-bold">{ticketTotals.TOTAL || 0}</div>
+            <p className="text-xs text-muted-foreground">In current sprint</p>
           </CardContent>
         </Card>
         <Card>
@@ -240,8 +332,8 @@ export default function Dashboard({ params }: { params: { teamId: string } }) {
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">32</div>
-            <p className="text-xs text-muted-foreground">71% completion rate</p>
+            <div className="text-2xl font-bold">{ticketTotals.CLOSED || 0}</div>
+            <p className="text-xs text-muted-foreground">{completionPercentage()}% completion rate</p>
           </CardContent>
         </Card>
         <Card>
@@ -250,8 +342,8 @@ export default function Dashboard({ params }: { params: { teamId: string } }) {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
-            <p className="text-xs text-muted-foreground">+3 this month</p>
+            <div className="text-2xl font-bold">{teamInfo?._count.WikiPage}</div>
+            <p className="text-xs text-muted-foreground">For current team</p>
           </CardContent>
         </Card>
         <Card>
@@ -260,7 +352,7 @@ export default function Dashboard({ params }: { params: { teamId: string } }) {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
+            <div className="text-2xl font-bold">{teamInfo?._count.TeamRoles}</div>
             <p className="text-xs text-muted-foreground">Active contributors</p>
           </CardContent>
         </Card>
@@ -273,20 +365,32 @@ export default function Dashboard({ params }: { params: { teamId: string } }) {
             <CardDescription>Current sprint completion status</CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={sprintProgressData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="day" className="text-xs" />
-                  <YAxis className="text-xs" />
-                  <Tooltip content={<SprintProgressTooltip />} />
-                  <Legend />
-                  <Bar dataKey="completed" name="Completed" stackId="a" fill="#10b981" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="remaining" name="Remaining" stackId="a" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="blocked" name="Blocked" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            {sprintProgressData ? (
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={sprintProgressData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="day" className="text-xs" />
+                    <YAxis className="text-xs" />
+                    <Tooltip content={<SprintProgressTooltip />} />
+                    <Legend />
+                    <Bar dataKey="completed" name="Completed" stackId="a" fill="#10b981" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="remaining" name="Remaining" stackId="a" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="blocked" name="Blocked" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-[300px]">
+                <p className="text-muted-foreground mb-4">No sprint progress data available</p>
+                <button
+                  onClick={() => router.push(`/tickets/${teamId}`)}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                >
+                  Go to Tickets
+                </button>
+              </div>
+            )}
           </CardContent>
         </Card>
         <Card className="col-span-3">
@@ -295,28 +399,35 @@ export default function Dashboard({ params }: { params: { teamId: string } }) {
             <CardDescription>By status</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    activeIndex={activeIndex}
-                    activeShape={renderActiveShape}
-                    data={ticketDistributionData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    dataKey="value"
-                    onMouseEnter={onPieEnter}
-                  >
-                    {ticketDistributionData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+            {ticketDistributionData ? (
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      activeIndex={activeIndex}
+                      activeShape={renderActiveShape}
+                      data={ticketDistributionData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      dataKey="value"
+                      onMouseEnter={onPieEnter}
+                    >
+                      {ticketDistributionData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-[300px] text-center">
+                <p className="text-muted-foreground mb-2">No active sprint found</p>
+                <p className="text-sm text-muted-foreground">Start a sprint to see ticket distribution data</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -329,7 +440,7 @@ export default function Dashboard({ params }: { params: { teamId: string } }) {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {mockRecentTickets.map((ticket) => (
+              {recentTickets.map((ticket) => (
                 <div
                   key={ticket.id}
                   className="flex items-start gap-4 rounded-lg border p-3 cursor-pointer hover:bg-muted/50 transition-colors"
@@ -339,7 +450,7 @@ export default function Dashboard({ params }: { params: { teamId: string } }) {
                   <div>
                     <p className="text-sm font-medium">{ticket.title}</p>
                     <p className="text-xs text-muted-foreground">
-                      By {ticket.assignee} • Status: {ticket.status}
+                      {ticket.assignee && `By ${ticket.assignee?.name} • `}Status: {ticket.status}
                     </p>
                   </div>
                 </div>
@@ -354,7 +465,7 @@ export default function Dashboard({ params }: { params: { teamId: string } }) {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {mockWikiPages.map((wikiPage) => (
+              {wikiPages && wikiPages.map((wikiPage) => (
                 <div
                   key={wikiPage.id}
                   className="flex items-start gap-4 rounded-lg border p-3 cursor-pointer hover:bg-muted/50 transition-colors"
@@ -363,7 +474,7 @@ export default function Dashboard({ params }: { params: { teamId: string } }) {
                   <FileText className="mt-1 h-5 w-5 text-muted-foreground" />
                   <div>
                     <p className="text-sm font-medium">{wikiPage.title}</p>
-                    <p className="text-xs text-muted-foreground line-clamp-2">{wikiPage.excerpt}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{wikiPage.summary}</p>
                   </div>
                 </div>
               ))}

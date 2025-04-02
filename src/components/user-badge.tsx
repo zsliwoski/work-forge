@@ -66,7 +66,7 @@ export function UserBadge({ expanded }: UserBadgeProps) {
           <p className="text-xs text-muted-foreground">{sessionUser?.email}</p>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
+        <DropdownMenuItem disabled asChild>
           <Link href="/settings/profile" className="flex w-full cursor-pointer">
             <Settings className="mr-2 h-4 w-4" />
             <span>Settings</span>
