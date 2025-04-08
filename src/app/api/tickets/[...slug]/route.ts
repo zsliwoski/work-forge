@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/src/lib/db'
 import { ticketSchema } from '@/src/lib/schema';
+import { getToken } from 'next-auth/jwt';
+import { getUser, getUserRole } from '@/src/lib/api';
 
 // GET /api/tickets/:teamId
 // GET /api/tickets/:teamId/:ticketId
@@ -127,6 +129,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
         return NextResponse.json({ error: 'Invalid team ID' }, { status: 400 });
     }
 
+    const user = await getUserRole(req, teamId);
+
+    if (!user) {
+        return NextResponse.json({ error: 'User Authentication is required' }, { status: 401 });
+    }
+
     // Parse the request body and validate it against the ticket schema
     let body = await req.json();
     const validationResult = ticketSchema.safeParse({ ...body, status: 'OPEN' });
@@ -137,6 +145,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
     }
 
     try {
+
         // Extract tags from the request body and delete them from the body
         const tags = body.tags || [];
         delete body.tags;
@@ -145,7 +154,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
             ...body,
             teamId,
             status: 'OPEN',
-            reporterId: "cm85696e60000vwbkm55ax25t", // Hardcoded for now
+            reporterId: user?.userId,
         };
 
         // Create a new ticket

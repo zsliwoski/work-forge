@@ -1,10 +1,10 @@
 import { PrismaClient } from "@prisma/client";
-
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
 export const prisma =
     globalForPrisma.prisma || new PrismaClient();
 
 export const fetcher = (...args) => fetch(...args).then(res => res.json())
+
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;

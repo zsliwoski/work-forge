@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -108,9 +108,9 @@ model SprintDailyProgress {
   id        String   @id @default(cuid())
   sprintId  String
   createdAt DateTime @default(now())
-  completed Int
-  blocked   Int
-  remaining Int
+  completed Int      @default(0)
+  blocked   Int      @default(0)
+  remaining Int      @default(0)
   Sprint    Sprint   @relation(fields: [sprintId], references: [id], onDelete: Cascade)
 }
 
