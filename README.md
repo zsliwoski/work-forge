@@ -21,8 +21,8 @@ WorkForge is a powerful ticketing and wiki system that leverages AI and Analytic
 
 ### Prerequisites
 
-- Node.js
-- Postgres SQL
+- [Node.js](https://nodejs.org/en/learn/getting-started/introduction-to-nodejs)
+- [Postgres SQL](https://www.postgresql.org/docs/current/tutorial-install.html)
 
 ### Installation
 
@@ -37,35 +37,6 @@ WorkForge is a powerful ticketing and wiki system that leverages AI and Analytic
     cd work-forge
     npm install
     ```
-
-
-### Initialize Prisma
-
-1. Install Prisma CLI:
-    ```bash
-    npm install prisma --save-dev
-    ```
-
-2. Initialize Prisma in your project:
-    ```bash
-    npx prisma init
-    ```
-
-3. Configure the `DATABASE_URL` in the `.env` file to point to your Postgres database:
-    ```
-    DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/DATABASE_NAME"
-    ```
-
-### Migrate the Database
-
-1. Define your Prisma schema in `prisma/schema.prisma`.
-
-2. Run the migration to create the database structure:
-    ```bash
-    npx prisma db push
-    ```
-
-The Prisma database is now generated!
 
 ### Create a .env File
 
@@ -86,6 +57,32 @@ To run workforge, you'll need to create a `.env` file from the `example.env` fil
     ```
     DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/DATABASE_NAME"
     ```
+
+### Initialize Prisma
+
+1. Install Prisma CLI:
+    ```bash
+    npm install prisma --save-dev
+    ```
+
+2. Initialize Prisma in your project:
+    ```bash
+    npx prisma init
+    ```
+
+3. Ensure the DATABASE_URL variable in your .env file is set to a valid Postgres url
+    (Prisma will automatically create the database, but [Postgres](https://www.postgresql.org/docs/current/tutorial-install.html) does need to be setup beforehand)
+
+### Migrate the Database
+
+1. Define your Prisma schema in `prisma/schema.prisma`.
+
+2. Run the migration to create the database structure:
+    ```bash
+    npx prisma db push
+    ```
+
+The Prisma database is now generated!
 
 ### Running the Application
 
