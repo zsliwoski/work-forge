@@ -1,23 +1,23 @@
-# WorkForge
+# WorkForge 🚀
 
 WorkForge is a powerful ticketing and wiki system that leverages AI and Analytics to help teams work faster and more efficiently. Built with a Next.js frontend, WorkForge provides a seamless and intuitive user experience.
 
 [Backend Repository](https://github.com/zsliwoski/work-forge-cloud)
 
-## Features
+## Features ✨
 
 - **Integrated Wiki**: Maintain comprehensive documentation and knowledge base.
 - **Analytics Dashboard**: Gain insights into team performance and ticket resolution times.
 - **Real-time Collaboration**: Collaborate with team members in real-time.
 - **Customizable Workflows**: Tailor workflows to fit your team's needs.
 
-## Technology Stack
+## Technology Stack 🛠️
 
 - **Frontend**: Next.js
 - **Database**: Postgres SQL
 - **ORM**: Prisma
 
-## Getting Started
+## Getting Started 🏁
 
 ### Prerequisites
 
@@ -38,7 +38,7 @@ WorkForge is a powerful ticketing and wiki system that leverages AI and Analytic
     npm install
     ```
 
-## Setting Up the Database
+## Setting Up the Database 🗄️
 
 ### Initialize Prisma
 
@@ -102,14 +102,14 @@ To run workforge, you'll need to create a `.env` file from the `example.env` fil
 
 3. Open your browser and navigate to `http://localhost:3000`.
 
-## Contributing
+## Contributing 🤝
 
 We welcome contributions! Please read our [Contributing Guidelines](CONTRIBUTING.md) for more information.
 
-## License
+## License 📜
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-## Contact
+## Contact 📧
 
 For any inquiries, please contact me at [zsliwoski@gmail.com].
