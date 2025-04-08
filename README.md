@@ -38,7 +38,6 @@ WorkForge is a powerful ticketing and wiki system that leverages AI and Analytic
     npm install
     ```
 
-## Setting Up the Database 🗄️
 
 ### Initialize Prisma
 
@@ -63,12 +62,7 @@ WorkForge is a powerful ticketing and wiki system that leverages AI and Analytic
 
 2. Run the migration to create the database structure:
     ```bash
-    npx prisma migrate dev --name init
-    ```
-
-3. Generate Prisma Client:
-    ```bash
-    npx prisma generate
+    npx prisma db push
     ```
 
 The Prisma database is now generated!
